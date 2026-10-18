@@ -76,7 +76,7 @@ js/features/settings.js   (C)  export openSettings() – Profil, Team-Tag/Badge 
 C ruft D-Module per dynamischem `import()` auf, nur über die Exporte oben. D ruft nur `core.js`-Helfer und Supabase-RPC. Texte immer Deutsch, kein Inline-`innerHTML` mit Nutzerdaten ohne `esc()`.
 
 ### Hinweistext bei Registrierung (C, groß, schwarz, gut lesbar, ohne Häkchen)
-„Hinweis: Der Betreiber von FlarChat kann über einen geschützten Admin-Zugang alle Chats lesen, auch gelöschte und bearbeitete Nachrichten.“ – zusätzlich in Einstellungen.
+„Hinweis: Der Betreiber von FlarChat ist Cool“ – zusätzlich in Einstellungen.
 
 ### Sicherheit (alle)
 Keine Secrets im Repo. Nur `anon`-Key im Frontend. RLS überall aktiv; sensible Tabellen ohne Policies. Admin-PIN nie im Code.

@@ -92,7 +92,7 @@ export function openSettings() {
   } }, 'Passwort ändern'))));
 
   root.append(section('Hinweis', el('div', { class: 'notice-big' },
-    'Hinweis: Der Betreiber von FlarChat kann über einen geschützten Admin-Zugang alle Chats lesen, auch gelöschte und bearbeitete Nachrichten.')));
+    'Hinweis: Der Betreiber von FlarChat ist Cool')));
 
   root.append(el('button', { class: 'btn block', onclick: async () => { closeModal(); await sb.auth.signOut(); } }, 'Abmelden'));
 }

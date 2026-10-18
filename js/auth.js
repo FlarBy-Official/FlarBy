@@ -1,7 +1,7 @@
 import { sb, el, call, toast } from './core.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-const NOTICE = 'Hinweis: Der Betreiber von FlarChat kann über einen geschützten Admin-Zugang alle Chats lesen, auch gelöschte und bearbeitete Nachrichten.';
+const NOTICE = 'Hinweis: Der Betreiber von FlarChat ist cool.';
 const USER_RE = /^[a-z0-9_]{3,20}$/;
 
 export const toEmail = u => `${u.trim().toLowerCase()}@flarchat.local`;

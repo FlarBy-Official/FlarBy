@@ -1,4 +1,4 @@
-const CACHE = 'flarchat-shell-v1';
+const CACHE = 'flarchat-shell-v2';
 const SHELL = ['./', './index.html', './css/style.css', './css/features.css', './manifest.json', './icons/icon.svg',
   './js/app.js', './js/auth.js', './js/chatlist.js', './js/chat.js', './js/pinlock.js', './js/media.js',
   './js/core.js', './js/config.js', './js/features/settings.js'];

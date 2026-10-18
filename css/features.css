@@ -70,3 +70,4 @@ h4{margin:16px 0 6px}
 .audit{border-collapse:collapse;width:100%;font-size:.85em}
 .audit th,.audit td{border-bottom:1px solid var(--border,#ddd);padding:6px;text-align:left;vertical-align:top;word-break:break-word}
 .admin-wrap details{margin-top:20px}
+.admin-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--fg,#111);overflow:auto}

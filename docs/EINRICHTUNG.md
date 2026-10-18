@@ -136,9 +136,9 @@ supabase functions deploy register reset-with-recovery admin-reset-password
 
 ## 11. Eigene Admin-PIN setzen
 
-Der Admin-Bereich (`admin.html`) ist durch eine PIN geschützt. Du legst sie selbst fest.
+Der Admin-Bereich (Menü „🔐 Admin-Bereich“, nur beim Owner) ist durch eine PIN geschützt. Du legst sie selbst fest.
 
-1. Melde dich als Owner in FlarChat an und öffne `admin.html` (Menü > Admin-Bereich).
+1. Melde dich als Owner in FlarChat an und öffne im Menü „🔐 Admin-Bereich“.
 2. Öffne „PIN setzen / ändern“, lasse „Alte PIN“ leer und gib eine neue PIN mit 8–12 Ziffern ein.
 3. **Schreibe die PIN nirgends ins Repo, in Dateien auf GitHub oder in einen Chat.**
 4. **Eine PIN, die schon einmal im Chatverlauf (beim Entwickeln) genannt wurde, darfst du NICHT verwenden.** Sie gilt als bekannt. Wähle eine neue.
@@ -219,7 +219,7 @@ Schließe die App ganz und öffne sie neu. Sonst die Seite im Browser neu laden 
 Warte 15 Minuten.
 
 **Ich habe die Admin-PIN vergessen.**
-Im SQL Editor `delete from admin_pins;` ausführen und danach in `admin.html` eine neue PIN setzen.
+Im SQL Editor `delete from admin_pins;` ausführen und danach im Admin-Bereich eine neue PIN setzen.
 
 **Wie viele Nutzer gehen?**
 FlarChat ist für unter 50 Nutzer gedacht. Der kostenlose Supabase-Plan reicht dafür. Er pausiert Projekte nach längerer Inaktivität. Öffne dann das Supabase-Dashboard und klicke auf **Restore**.

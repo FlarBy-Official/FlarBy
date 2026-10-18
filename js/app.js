@@ -100,7 +100,7 @@ function toggleMenu(sidebar) {
   if (['moderator', 'admin', 'owner'].includes(role)) {
     items.push(['🛡 Team-Bereich', async () => (await import('./features/team.js')).openTeamPanel()]);
   }
-  if (role === 'owner') items.push(['🔐 Admin-Bereich', () => { location.href = 'admin.html'; }]);
+  if (role === 'owner') items.push(['🔐 Admin-Bereich', () => import('./admin.js').then(m => m.openAdmin())]);
   items.push(['Abmelden', () => sb.auth.signOut()]);
   sidebar.append(el('div', { class: 'dropdown' }, items.map(([label, fn]) =>
     el('button', { onclick: async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } } }, label))));

@@ -1,22 +1,43 @@
 import { sb, state, el, esc, toast, call, nameHtml } from './core.js';
 
-const root = document.getElementById('admin-root');
-let unlockedUntil = null, timer = null;
+let root = document.getElementById('admin-root');
+let unlockedUntil = null, timer = null, overlay = null;
 
 const banner = () => el('div', { class: 'admin-banner' }, 'Schreibgeschützter Admin-Zugang – alle Zugriffe werden protokolliert');
 const fmt = iso => new Date(iso).toLocaleString('de-DE');
 
-function screen(...nodes) { root.replaceChildren(banner(), el('div', { class: 'admin-wrap' }, ...nodes)); }
+function backBtn() {
+  return overlay ? el('button', { class: 'btn', onclick: closeAdmin }, 'Schließen') : el('a', { class: 'btn', href: './' }, 'Zur App');
+}
+
+function closeAdmin() {
+  clearInterval(timer);
+  unlockedUntil = null;
+  overlay?.remove();
+  overlay = null;
+  root = null;
+}
+
+// Öffnet den Admin-Bereich als Vollbild-Ansicht innerhalb der App (PIN wird immer abgefragt)
+export function openAdmin() {
+  if (overlay) return;
+  root = el('div', { id: 'admin-root' });
+  overlay = el('div', { class: 'admin-overlay' }, root);
+  document.body.append(overlay);
+  init();
+}
+
+function screen(...nodes) { root?.replaceChildren(banner(), el('div', { class: 'admin-wrap' }, ...nodes)); }
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) return screen(el('h2', {}, 'Admin-Bereich'), el('p', {}, 'Bitte zuerst in FlarChat anmelden.'), el('a', { class: 'btn', href: './' }, 'Zur App'));
+  if (!session) return screen(el('h2', {}, 'Admin-Bereich'), el('p', {}, 'Bitte zuerst in FlarChat anmelden.'), backBtn());
   state.me = session.user;
   try {
     const p = await call('my_profile');
     state.profile = Array.isArray(p) ? p[0] : p;
   } catch (e) { return screen(el('p', { class: 'error' }, e.message)); }
-  if (state.profile?.global_role !== 'owner') return screen(el('h2', {}, 'Kein Zugriff'), el('p', {}, 'Dieser Bereich ist nur für den Owner.'), el('a', { class: 'btn', href: './' }, 'Zur App'));
+  if (state.profile?.global_role !== 'owner') return screen(el('h2', {}, 'Kein Zugriff'), el('p', {}, 'Dieser Bereich ist nur für den Owner.'), backBtn());
   pinScreen();
 }
 
@@ -61,7 +82,7 @@ function mainScreen() {
   const view = el('div', { class: 'admin-view' });
   const tabs = el('div', { class: 'tabs' });
   screen(el('div', { class: 'row' }, el('h2', { class: 'grow' }, 'Admin-Bereich'), el('span', {}, 'Entsperrt noch: ', countdown),
-    el('button', { class: 'btn ghost small', onclick: lock }, 'Sperren')), tabs, view);
+    el('button', { class: 'btn ghost small', onclick: lock }, 'Sperren'), overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, 'Schließen') : null), tabs, view);
 
   clearInterval(timer);
   const tick = () => {
@@ -126,4 +147,4 @@ async function auditView(view) {
   view.replaceChildren(rows.length ? el('div', { class: 'table-scroll' }, t) : el('p', { class: 'muted' }, 'Leer.'));
 }
 
-init();
+if (root) init();

@@ -49,7 +49,7 @@ Hake jeden Punkt ab. Nutze mindestens zwei Browser oder Geräte (oder ein Privat
 - [ ] Normale Nutzer sehen keine Meldungen.
 
 ## Admin-PIN und Sperre
-- [ ] Ohne PIN zeigt `admin.html` keine Chats.
+- [ ] Ohne PIN zeigt der Admin-Bereich keine Chats.
 - [ ] Richtige PIN entsperrt für 10 Minuten.
 - [ ] 5 falsche Eingaben hintereinander: Sperre für 15 Minuten.
 - [ ] Auch die richtige PIN wird während der Sperre abgelehnt.

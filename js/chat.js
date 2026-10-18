@@ -110,6 +110,7 @@ export async function openChat(chatId) {
       const p = profCache.get(id);
       if (p?.username && id !== state.me.id) cands.push({ tag: p.username, label: p.display_name && p.display_name !== p.username ? p.display_name : '', icon: '👤' });
     }
+    if (c.canMentionRoles) cands.push({ tag: 'everyone', label: 'Alle im Chat', icon: '📣' });
     if (c.canMentionRoles) for (const r of c.roleList || []) cands.push({ tag: r.name.toLowerCase().replace(/\s+/g, ''), label: 'Rolle', icon: '🏷' });
     const hits = cands.filter(x => x.tag.toLowerCase().startsWith(q)).sort((a, b) => a.tag.localeCompare(b.tag, 'de')).slice(0, 8);
     if (!hits.length) { mentionBox.classList.add('hidden'); return; }

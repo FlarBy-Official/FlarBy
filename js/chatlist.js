@@ -43,7 +43,7 @@ const readMentions = () => { try { return new Set(JSON.parse(localStorage.getIte
 const writeMentions = set => localStorage.setItem(MENTION_KEY, JSON.stringify([...set]));
 
 export function myMentionTokens(chatId) {
-  const t = new Set();
+  const t = new Set(['@everyone']);
   const u = state.profile?.username || state.pub?.username;
   if (u) t.add('@' + u.toLowerCase());
   const r = roleNames.get(chatId);

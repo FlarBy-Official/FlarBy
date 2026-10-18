@@ -86,7 +86,8 @@ async function readChat(view, chat, back) {
       if (m.media_path) {
         const note = d.querySelector('.media-note');
         const fail = msg => { if (note) note.textContent = '🖼 Bild-Fehler: ' + msg; };
-        signedUrl(m.media_path).then(url => {
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Zeitüberschreitung – keine Antwort von Supabase')), 10000));
+        Promise.race([signedUrl(m.media_path), timeout]).then(url => {
           if (note) note.remove();
           const img = el('img', { src: url, alt: 'Bild', style: 'max-width:240px;max-height:240px;border-radius:8px;display:block;margin-top:6px' });
           img.onerror = () => d.append(el('p', { class: 'error small' }, 'Bild-Fehler: Datei konnte nicht angezeigt werden.'));

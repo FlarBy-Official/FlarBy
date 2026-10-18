@@ -8,7 +8,7 @@ const banner = () => el('div', { class: 'admin-banner' }, 'Admin-Panel – Chat-
 const fmt = iso => new Date(iso).toLocaleString('de-DE');
 
 function backBtn() {
-  return overlay ? el('button', { class: 'btn', onclick: closeAdmin }, 'Schließen') : el('a', { class: 'btn', href: './' }, 'Zur App');
+  return overlay ? el('button', { class: 'btn', onclick: closeAdmin }, '← Zurück') : el('a', { class: 'btn', href: './' }, 'Zur App');
 }
 
 function closeAdmin() {
@@ -43,7 +43,7 @@ async function init() {
 function mainScreen() {
   const view = el('div', { class: 'admin-view' });
   const tabs = el('div', { class: 'tabs' });
-  screen(el('div', { class: 'row' }, el('h2', { class: 'grow' }, 'Admin-Panel'), overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, 'Schließen') : null), tabs, view);
+  screen(el('div', { class: 'row' }, overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, '← Zurück') : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
     tabs.replaceChildren(...[['chats', 'Chats'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));

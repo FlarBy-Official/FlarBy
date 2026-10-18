@@ -1,4 +1,5 @@
 import { sb, state, el, esc, toast, call, nameHtml } from './core.js';
+import { signedUrl } from './media.js';
 
 let root = document.getElementById('admin-root');
 let overlay = null;
@@ -82,6 +83,11 @@ async function readChat(view, chat, back) {
         <div>${esc(m.body || '')}${m.media_path ? ' <span class="muted">[Bild]</span>' : ''}</div>
         ${edits.length ? '<ul class="edits">' + edits.map(e => `<li><span class="muted small">${esc(fmt(e.edited_at))}:</span> ${esc(e.old_body)}</li>`).join('') + '</ul>' : ''}`;
       list.append(d);
+      if (m.media_path) {
+        signedUrl(m.media_path).then(url => d.append(el('a', { href: url, target: '_blank', rel: 'noopener' },
+          el('img', { src: url, alt: 'Bild', style: 'max-width:240px;max-height:240px;border-radius:8px;display:block;margin-top:6px' }))))
+          .catch(() => d.append(el('p', { class: 'muted small' }, 'Bild konnte nicht geladen werden.')));
+      }
     }
     view.replaceChildren(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: back }, '← Zurück'), el('strong', {}, chat.name || 'Direktchat')),
       msgs.length ? list : el('p', { class: 'muted' }, 'Keine Nachrichten.'));

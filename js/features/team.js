@@ -1,6 +1,5 @@
 import { sb, state, el, esc, toast, openModal, confirmDialog, call, nameHtml, fmtTime } from '../core.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
-import { renderCodeList, showCodeBox } from './invite.js';
 
 const LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
 const GLOBAL_LABEL = { user: 'Nutzer', moderator: 'Moderator', admin: 'Admin', owner: 'Owner' };
@@ -21,7 +20,6 @@ export function openTeamPanel() {
   const tabs = [['reports', 'Meldungen', 1, tabReports]];
   if (lvl >= 2) tabs.push(['tickets', 'Tickets', 2, tabTickets]);
   tabs.push(['users', 'Nutzer', 1, tabUsers]);
-  if (lvl >= 2) tabs.push(['codes', 'Codes', 2, tabCodes]);
 
   const content = el('div', { class: 'team-content' });
   const bar = el('div', { class: 'tabs' });
@@ -132,21 +130,4 @@ async function tabUsers(box) {
     }
     return d;
   }));
-}
-
-async function tabCodes(box) {
-  const out = el('div', { class: 'code-out' });
-  const list = el('div', { class: 'code-list' });
-  const dur = el('select', {}, [[24, '24 Stunden'], [72, '3 Tage'], [168, '7 Tage'], [720, '30 Tage']].map(([h, l]) => el('option', { value: h }, l)));
-  async function load() {
-    try { renderCodeList(list, ((await call('list_codes', { p_chat_id: null })) || []).filter(c => c.kind !== 'chat'), load); }
-    catch (e) { list.textContent = e.message; }
-  }
-  box.replaceChildren(
-    el('div', { class: 'row' }, el('label', { class: 'grow' }, 'Gültig für ', dur),
-      el('button', { class: 'btn', onclick: async () => {
-        try { await showCodeBox(out, await call('create_register_code', { p_hours: +dur.value })); load(); } catch (e) { toast(e.message); }
-      } }, 'Registrier-Code erzeugen')),
-    out, el('h4', {}, 'Registrier-Codes'), list);
-  await load();
 }

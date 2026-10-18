@@ -1,5 +1,7 @@
 import { sb, state, el, esc, toast, openModal, confirmDialog, call, nameHtml } from '../core.js';
 import { roleLabel } from './roles.js';
+import { avatarEl, avatarEditor } from '../avatar.js';
+import { openAvatarReport } from './report.js';
 
 export async function openChatInfo(chatId) {
   const body = el('div', { class: 'chatinfo' }, el('p', { class: 'muted' }, 'Lade …'));
@@ -27,15 +29,20 @@ export async function openChatInfo(chatId) {
     const nodes = [];
 
     const name = el('input', { type: 'text', maxlength: 60, value: chat.name || '', disabled: !can('edit_chat_info') });
-    const avatar = el('input', { type: 'url', placeholder: 'Bild-URL (optional)', value: chat.avatar_url || '', disabled: !can('edit_chat_info') });
     const head = el('div', { class: 'info-head' },
-      chat.avatar_url ? el('img', { class: 'avatar-lg', src: chat.avatar_url, alt: '' }) : el('div', { class: 'avatar-lg ph' }, (chat.name || '?')[0]?.toUpperCase()),
-      el('label', { class: 'field' }, 'Gruppenname', name),
-      el('label', { class: 'field' }, 'Gruppenbild', avatar));
+      avatarEl({ url: chat.avatar_url, name: chat.name, seed: chatId, cls: 'lg' }),
+      el('label', { class: 'field' }, 'Gruppenname', name));
     if (chat.verified) head.append(el('span', { class: 'verified', title: 'Verifiziert' }, '✔'));
     nodes.push(head);
+    if (can('edit_chat_info')) {
+      nodes.push(avatarEditor({ value: chat.avatar_url, name: chat.name, seed: chatId, prefix: `c/${chatId}`,
+        save: v => call('set_chat_avatar', { p_chat_id: chatId, p_value: v }), onChange: () => window.dispatchEvent(new CustomEvent('flarchat:avatar-changed')) }));
+      if (chat.avatar_removed_reason) nodes.push(el('p', { class: 'avatar-notice' }, 'Das Team hat das Gruppenavatar entfernt. Grund: ' + chat.avatar_removed_reason));
+    } else if (chat.avatar_url) {
+      nodes.push(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: () => openAvatarReport('chat', chatId) }, '🚩 Avatar melden')));
+    }
     if (can('edit_chat_info')) nodes.push(el('div', { class: 'row end' }, el('button', { class: 'btn', onclick: async () => {
-      try { await call('update_chat', { p_chat_id: chatId, p_name: name.value.trim(), p_avatar_url: avatar.value.trim() || null }); toast('Gespeichert.'); await render(); }
+      try { await call('update_chat', { p_chat_id: chatId, p_name: name.value.trim(), p_avatar_url: null }); toast('Gespeichert.'); await render(); }
       catch (e) { toast(e.message); }
     } }, 'Speichern')));
 
@@ -61,8 +68,10 @@ export async function openChatInfo(chatId) {
       const isOwner = r?.system_key === 'owner';
       const line = el('div', { class: 'list-row' });
       const lab = el('span', { class: 'grow' });
+      line.append(avatarEl({ url: p.avatar_url, name: p.display_name || p.username, seed: mem.user_id, cls: 'sm' }));
       lab.innerHTML = `${nameHtml(p)}${mem.user_id === me ? ' (du)' : ''} <span class="role-chip" style="--c:${esc(r?.color || '#888')}">${esc(roleLabel(r))}</span>`;
       line.append(lab);
+      if (mem.user_id !== me && p.avatar_url) line.append(el('button', { class: 'btn ghost small', title: 'Avatar melden', onclick: () => openAvatarReport('user', mem.user_id) }, '🚩'));
       if (mem.user_id !== me && !isOwner) {
         if (can('assign_roles')) {
           const sel = el('select', { 'aria-label': 'Rolle' }, (roles || []).filter(x => x.system_key !== 'owner')
@@ -105,8 +114,9 @@ export async function openChatInfo(chatId) {
     title.innerHTML = nameHtml(peer);
     body.replaceChildren(
       el('div', { class: 'info-head' },
-        peer.avatar_url ? el('img', { class: 'avatar-lg', src: peer.avatar_url, alt: '' }) : el('div', { class: 'avatar-lg ph' }, (peer.display_name || peer.username || '?')[0].toUpperCase()),
+        avatarEl({ url: peer.avatar_url, name: peer.display_name || peer.username, seed: peer.id, cls: 'lg' }),
         el('div', {}, title, el('div', { class: 'muted' }, '@' + (peer.username || '')))),
+      peer.avatar_url && peer.id ? el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: () => openAvatarReport('user', peer.id) }, '🚩 Avatar melden')) : '',
       el('div', { class: 'row end' }, el('button', { class: 'btn danger', onclick: async () => {
         if (!await confirmDialog('Chat verlassen und aus deiner Liste entfernen?', 'Entfernen')) return;
         try { await call('leave_chat', { p_chat_id: chatId }); m.close(); window.dispatchEvent(new CustomEvent('flarchat:chat-left', { detail: { chatId } })); }

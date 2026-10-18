@@ -1,4 +1,5 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, closeModal, confirmDialog } from '../core.js';
+import { avatarEditor } from '../avatar.js';
 import { hasPin, setPin, removePin } from '../pinlock.js';
 
 export function applyTheme(mode) {
@@ -44,6 +45,19 @@ export function openSettings() {
       toast('Gespeichert');
     } }, 'Speichern'),
     prev));
+
+  // Profilbild
+  const avBox = el('div', {}, el('span', { class: 'muted small' }, 'Lade …'));
+  root.append(section('Profilbild', avBox));
+  call('my_avatar_state').then(r => {
+    const st = Array.isArray(r) ? r[0] : r;
+    avBox.replaceChildren(avatarEditor({
+      value: state.pub?.avatar_url, name: p.display_name || p.username, seed: state.me.id, prefix: 'u/' + state.me.id,
+      locked: !!st?.locked,
+      save: v => call('set_my_avatar', { p_value: v }),
+      onChange: v => { if (state.pub) state.pub.avatar_url = v; window.dispatchEvent(new CustomEvent('flarchat:avatar-changed')); },
+    }));
+  }).catch(e => avBox.replaceChildren(el('span', { class: 'error' }, e.message)));
 
   // Sichtbarkeit
   const vis = [];

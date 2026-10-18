@@ -1,4 +1,5 @@
 import { sb, state, el, nameHtml, esc, fmtTime, toast, call, openModal } from './core.js';
+import { avatarEl } from './avatar.js';
 
 let listEl = null;
 let items = [];
@@ -140,7 +141,7 @@ function render() {
       ? (c.last_message_at ? '📷 Bild' : '') : c.last_message_body;
     const prefix = c.type === 'group' && c.last_message_sender && c.last_message_sender === state.me?.id ? 'Du: ' : '';
     return el('div', { class: 'chat-item' + (c.chat_id === activeId ? ' active' : ''), onclick: () => { location.hash = '#/chat/' + c.chat_id; } },
-      el('div', { class: 'avatar' }, initial(t.text)),
+      avatarEl({ url: c.avatar_url, name: t.text, seed: c.peer_user_id || c.chat_id }),
       el('div', { class: 'chat-main' },
         el('div', { class: 'chat-line' }, nameEl,
           el('span', { class: 'chat-time' + (unread ? ' unread' : '') }, c.last_message_at ? fmtTime(c.last_message_at) : '')),
@@ -197,7 +198,7 @@ function newDirect() {
               await refreshChatList();
               location.hash = '#/chat/' + id;
             } catch (e) { toast(e.message); }
-          } }, el('div', { class: 'avatar sm' }, initial(u.display_name || u.username)), n);
+          } }, avatarEl({ url: u.avatar_url, name: u.display_name || u.username, seed: u.id, cls: 'sm' }), n);
         }) : [el('div', { class: 'empty' }, 'Niemand gefunden.')]));
       } catch (e) { res.replaceChildren(el('div', { class: 'error' }, e.message)); }
     }, 300);

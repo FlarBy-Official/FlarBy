@@ -1,4 +1,5 @@
 import { sb, state, el, esc, toast, openModal, confirmDialog, call, nameHtml, fmtTime } from '../core.js';
+import { avatarEl, avatarSignedUrl, parseAvatar } from '../avatar.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
 
 const LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
@@ -41,11 +42,43 @@ async function profMap(ids) {
   return Object.fromEntries((data || []).map(p => [p.id, p]));
 }
 
+async function attachmentImg(path) {
+  const { data, error } = await sb.storage.from('report-files').createSignedUrl(path, 600);
+  if (error) return el('p', { class: 'error' }, 'Anhang nicht ladbar: ' + error.message);
+  return el('img', { src: data.signedUrl, alt: 'Anhang', style: 'max-width:100%;max-height:260px;border-radius:8px' });
+}
+
+function avatarReportRow(a, reload) {
+  const name = a.target_name || a.target_username || '?';
+  const d = el('div', { class: 'list-row col' });
+  const head = el('div', { class: 'row' }, avatarEl({ url: a.avatar, name, seed: a.target_user_id || a.target_chat_id, cls: 'lg' }));
+  const txt = el('div', {});
+  txt.innerHTML = `<div><strong>Avatar-Meldung: ${a.kind === 'chat' ? 'Gruppe ' : ''}${esc(name)}</strong> <span class="status status-${a.status === 'open' ? 'aktiv' : 'verwendet'}">${a.status === 'open' ? 'offen' : 'erledigt'}</span></div>
+    <div>${esc(a.reason)}</div>
+    <div class="muted small">von @${esc(a.reporter_username || '?')} · ${esc(fmtTime(a.created_at))}${a.kind === 'user' ? ` · Entfernungen: ${a.removals}${a.locked ? ' · gesperrt' : ''}` : ''}</div>`;
+  head.append(txt);
+  d.append(head);
+  if (a.attachment_path) attachmentImg(a.attachment_path).then(i => d.insertBefore(i, d.children[1] || null));
+  const act = (label, fn, cls = 'ghost') => el('button', { class: 'btn small ' + cls, onclick: async () => { try { await fn(); toast('Erledigt.'); reload(); } catch (e) { toast(e.message); } } }, label);
+  const row = el('div', { class: 'row wrap' });
+  if (a.avatar) row.append(act('Avatar entfernen', async () => {
+    const t = await ask('Avatar entfernen', 'Grund (freiwillig)');
+    if (t === null) throw new Error('Abgebrochen.');
+    await call('team_remove_avatar', { p_kind: a.kind, p_target: a.kind === 'chat' ? a.target_chat_id : a.target_user_id, p_reason: (t || '').slice(0, 200) || null });
+    await call('resolve_avatar_report', { p_id: a.id });
+  }, 'danger'));
+  if (a.status === 'open') row.append(act('Erledigt', () => call('resolve_avatar_report', { p_id: a.id }), ''));
+  d.append(row);
+  return d;
+}
+
 export async function tabReports(box) {
   const rows = (await call('list_reports')) || [];
+  const avs = (await call('list_avatar_reports').catch(() => [])) || [];
   const pm = await profMap(rows.map(r => r.reporter_id));
-  if (!rows.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine Meldungen.'));
-  box.replaceChildren(...rows.map(r => {
+  if (!rows.length && !avs.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine Meldungen.'));
+  const avRows = avs.map(a => avatarReportRow(a, () => tabReports(box)));
+  box.replaceChildren(...avRows, ...rows.map(r => {
     const d = el('div', { class: 'list-row col' });
     d.innerHTML = `<div><strong>${esc(r.reason)}</strong> <span class="status status-${r.status === 'open' ? 'aktiv' : 'verwendet'}">${r.status === 'open' ? 'offen' : 'erledigt'}</span></div>
       <div class="muted small">von ${nameHtml(pm[r.reporter_id])} · ${esc(fmtTime(r.created_at))}</div>`;
@@ -58,6 +91,7 @@ async function reportDetail(r, reload) {
   const ctx = (await call('report_context', { p_report_id: r.id }).catch(e => { toast(e.message); return null; })) || [];
   const pm = await profMap(ctx.map(x => x.sender_id));
   const list = el('div', { class: 'ctx-list' });
+  call('report_attachment', { p_report_id: r.id }).then(async path => { if (path) list.before(await attachmentImg(path)); }).catch(() => { });
   for (const msg of ctx) {
     const d = el('div', { class: 'ctx-msg' + (msg.id === r.message_id ? ' flagged' : '') });
     d.innerHTML = `<div class="small">${nameHtml(pm[msg.sender_id])} <span class="muted">${esc(fmtTime(msg.created_at))}</span></div>
@@ -111,14 +145,24 @@ async function resetPassword(t, reload) {
 export async function tabUsers(box) {
   const me = state.profile, lvl = LEVEL[me.global_role];
   const rows = (await call('list_users')) || [];
+  const avState = Object.fromEntries(((await call('avatar_state_list').catch(() => [])) || []).map(x => [x.user_id, x]));
   box.replaceChildren(...rows.map(u => {
     const d = el('div', { class: 'list-row wrap' });
+    d.append(avatarEl({ url: u.avatar_url, name: u.display_name || u.username, seed: u.id, cls: 'sm' }));
+    const av = avState[u.id];
     const lab = el('span', { class: 'grow' });
     lab.innerHTML = `${nameHtml({ ...u, team_role: u.global_role !== 'user' ? u.global_role : null })} <span class="muted small">@${esc(u.username)}</span>${u.banned ? ' <span class="status status-widerrufen">gesperrt</span>' : ''}${u.muted_until && new Date(u.muted_until) > new Date() ? ' <span class="status status-abgelaufen">stumm</span>' : ''}`;
     d.append(lab);
     if (u.id === me.id) return d;
     const b = (l, fn) => el('button', { class: 'btn ghost small', onclick: async () => { try { await fn(); toast('Gespeichert.'); tabUsers(box); } catch (e) { toast(e.message); } } }, l);
     const targetLvl = LEVEL[u.global_role] ?? 0;
+    if (av?.removals) lab.innerHTML += ` <span class="muted small">Avatar entfernt: ${av.removals}×</span>${av.locked ? ' <span class="status status-widerrufen">Avatare gesperrt</span>' : ''}`;
+    if (u.avatar_url) d.append(b('Avatar entfernen', async () => {
+      const t = await ask('Avatar entfernen', 'Grund (freiwillig)');
+      if (t === null) throw new Error('Abgebrochen.');
+      await call('team_remove_avatar', { p_kind: 'user', p_target: u.id, p_reason: (t || '').slice(0, 200) || null });
+    }));
+    d.append(b(av?.locked ? 'Avatare entsperren' : 'Avatare sperren', () => call('set_avatar_lock', { p_user_id: u.id, p_locked: !av?.locked })));
     d.append(b('Stumm', async () => { const h = await ask('Stummschalten', 'Stunden (0 = aufheben)', '24'); if (h !== null && h !== '') await call('mute_user', { p_user_id: u.id, p_hours: parseInt(h, 10) || 0 }); }));
     if (lvl >= 2 && targetLvl < lvl) d.append(b(u.banned ? 'Entsperren' : 'Sperren', async () => {
       if (await confirmDialog(`@${u.username} ${u.banned ? 'entsperren' : 'sperren'}?`, 'Ja')) await call('ban_user', { p_user_id: u.id, p_banned: !u.banned });

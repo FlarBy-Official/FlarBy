@@ -1,4 +1,4 @@
-import { sb, state, el, nameHtml, toast, call } from './core.js';
+import { sb, state, el, nameHtml, toast, call, openModal } from './core.js';
 import { renderAuth, forcePasswordChange } from './auth.js';
 import { mountChatList, setActiveChat, refreshChatList, refreshSoon, openNewChat } from './chatlist.js';
 import { mountChat, openChat, closeChat } from './chat.js';
@@ -54,6 +54,8 @@ async function start() {
     prof.must_change_password = false;
   }
   buildMain();
+  showAvatarNotice();
+  window.addEventListener('flarchat:avatar-changed', () => refreshChatList());
 }
 
 function buildMain() {
@@ -141,4 +143,18 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fit);
   window.visualViewport.addEventListener('scroll', fit);
   fit();
+}
+
+// Einmaliger Hinweis, wenn das Team das Avatar entfernt hat
+async function showAvatarNotice() {
+  try {
+    const r = await call('my_avatar_state');
+    const st = Array.isArray(r) ? r[0] : r;
+    if (!st?.notice) return;
+    const m = openModal('Hinweis vom Team', el('div', {},
+      el('p', {}, st.notice),
+      st.locked ? el('p', { class: 'muted' }, 'Du kannst im Moment kein Avatar mehr einstellen.') : '',
+      el('div', { class: 'row end' }, el('button', { class: 'btn', onclick: () => m.close() }, 'Verstanden'))));
+    await call('clear_avatar_notice');
+  } catch { /* nicht schlimm */ }
 }

@@ -99,3 +99,15 @@ h4{margin:16px 0 6px}
 .mention-box button{text-align:left;background:none;border:0;border-bottom:1px solid var(--border,#eee);padding:10px 14px;font:inherit;color:inherit;cursor:pointer}
 .mention-box button:hover{background:var(--hover,#f0f0f0)}
 .msg.clickable{cursor:pointer}
+.avatar.xs{width:20px;height:20px;font-size:11px}
+.avatar.lg{width:72px;height:72px;font-size:36px}
+.who-row{display:flex;align-items:center;gap:6px;margin-bottom:1px}
+.who-row .who{margin-bottom:0}
+.avatar-editor{margin:8px 0}
+.emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:8px 0}
+.emoji-grid button{font-size:24px;padding:6px;border:2px solid transparent;border-radius:8px;background:none;cursor:pointer}
+.emoji-grid button.on{border-color:var(--red,#FF2800)}
+.color-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.swatch{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.swatch.on{border-color:#333}
+.avatar-notice{margin:8px 0;padding:8px;border-radius:8px;background:rgba(255,40,0,.1)}

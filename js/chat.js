@@ -1,5 +1,6 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog } from './core.js';
 import { uploadImage, signedUrl } from './media.js';
+import { fillAvatar, avatarEl } from './avatar.js';
 import { refreshSoon, initial, isMuted, toggleMute, myMentionTokens, MENTION_RE } from './chatlist.js';
 
 const EDIT_MS = 3 * 24 * 3600 * 1000;
@@ -213,7 +214,7 @@ export async function openChat(chatId) {
   function renderHead() {
     const m = c.meta;
     const name = c.peer ? (c.peer.display_name || c.peer.username) : (m.name || 'Chat');
-    c.avatar.textContent = initial(name);
+    fillAvatar(c.avatar, { url: c.peer ? c.peer.avatar_url : m.avatar_url, name, seed: c.peer ? c.peer.id : m.chat_id });
     title.innerHTML = c.peer ? nameHtml(c.peer) : esc(m.name || 'Chat') + (m.verified ? ' <span class="verified" title="Verifiziert">✔</span>' : '');
     const typers = [...c.typing.keys()];
     if (typers.length) {
@@ -462,9 +463,10 @@ export async function openChat(chatId) {
     const mine = m.sender_id === state.me.id;
     const node = el('div', { class: 'msg' + (mine ? ' me' : '') + (m.deleted_at ? ' deleted' : ''), 'data-id': m.id });
     if (!mine && c.meta.type === 'group') {
+      const sp = profCache.get(m.sender_id);
       const who = el('div', { class: 'who' });
-      who.innerHTML = nameHtml(profCache.get(m.sender_id));
-      node.append(who);
+      who.innerHTML = nameHtml(sp);
+      node.append(el('div', { class: 'who-row' }, avatarEl({ url: sp?.avatar_url, name: sp?.display_name || sp?.username, seed: m.sender_id, cls: 'xs' }), who));
     }
     if (m.reply_to && !m.deleted_at) {
       const r = c.byId.get(m.reply_to);

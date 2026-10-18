@@ -130,3 +130,14 @@ sb.auth.onAuthStateChange((event) => {
 
 initPinLock(async () => { await sb.auth.signOut(); localStorage.removeItem('fc_pin'); document.getElementById('pinlock')?.remove(); });
 start().catch(e => { console.error(e); showAuth('Verbindungsproblem. Bitte später erneut versuchen.'); });
+
+// iPhone: Bei geöffneter Tastatur wird die sichtbare Höhe kleiner, damit das Eingabefeld sichtbar bleibt
+if (window.visualViewport) {
+  const fit = () => {
+    document.documentElement.style.setProperty('--vvh', window.visualViewport.height + 'px');
+    window.scrollTo(0, 0);
+  };
+  window.visualViewport.addEventListener('resize', fit);
+  window.visualViewport.addEventListener('scroll', fit);
+  fit();
+}

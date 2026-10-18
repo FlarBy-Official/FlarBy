@@ -1,0 +1,40 @@
+/* Handy- und iPhone-Anpassungen (wird zuletzt geladen) */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+body { -webkit-touch-callout: none; touch-action: manipulation; overflow: hidden; }
+button, .btn, .icon-btn, .chat-item, .tab, .list-row { -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.msg, .modal, input, textarea { -webkit-user-select: text; user-select: text; }
+
+/* Höhe passt sich an die Tastatur an (--vvh setzt js/app.js) */
+#app, #main { height: var(--vvh, 100dvh); }
+#chatpane { height: var(--vvh, 100dvh); }
+
+/* iPhone zoomt bei kleiner Schrift in Eingabefeldern: darum mindestens 16px */
+input, textarea, select { font-size: 16px !important; }
+
+/* Notch und Home-Balken */
+.auth-wrap { padding-top: calc(16px + env(safe-area-inset-top)); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.modal-overlay { padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+.modal { max-height: 100%; }
+.modal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#pinlock { padding-top: calc(16px + env(safe-area-inset-top)); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.dropdown { top: calc(54px + env(safe-area-inset-top)); }
+#toasts { bottom: calc(20px + env(safe-area-inset-bottom)); }
+.admin-overlay { padding-bottom: env(safe-area-inset-bottom); }
+.admin-banner { padding-top: calc(10px + env(safe-area-inset-top)); }
+#sidebar, #chatpane { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+#chatlist, .msgs, .modal-body, .admin-overlay, .table-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+@media (max-width: 760px) {
+  .icon-btn { width: 44px; height: 44px; }
+  .btn { min-height: 44px; }
+  .btn.small { min-height: 36px; }
+  .dropdown button { padding: 14px 16px; }
+  .dashbar .btn { min-height: 44px; }
+  .chat-item { padding: 12px; }
+  .msg { max-width: 88%; }
+  .msg .menu-btn { padding: 6px 10px; font-size: 18px; }
+  .modal-overlay { align-items: flex-end; }
+  .modal { max-width: 100%; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .modal.wide { max-width: 100%; }
+  .table-scroll { overflow-x: auto; }
+}

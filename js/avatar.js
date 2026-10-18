@@ -55,7 +55,7 @@ export function fillAvatar(node, { url, name, seed }) {
     node.style.background = colorFor(seed || name);
     node.textContent = letter(name);
     const show = src => {
-      const img = el('img', { src, alt: '', loading: 'lazy' });
+      const img = el('img', { src, alt: '' });
       img.onload = () => node.replaceChildren(img);
     };
     if (a.kind === 'url') show(a.url);

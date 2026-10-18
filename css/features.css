@@ -98,3 +98,4 @@ h4{margin:16px 0 6px}
 .mention-box{display:flex;flex-direction:column;border-top:1px solid var(--border,#ddd);background:var(--panel,#fff);max-height:220px;overflow-y:auto}
 .mention-box button{text-align:left;background:none;border:0;border-bottom:1px solid var(--border,#eee);padding:10px 14px;font:inherit;color:inherit;cursor:pointer}
 .mention-box button:hover{background:var(--hover,#f0f0f0)}
+.msg.clickable{cursor:pointer}

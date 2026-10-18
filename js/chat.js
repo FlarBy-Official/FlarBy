@@ -496,6 +496,14 @@ export async function openChat(chatId) {
       node.append(el('div', { class: 'reacts' }, [...counts].map(([e, n]) =>
         el('button', { class: 'react-chip' + (e === mineEmoji ? ' on' : ''), onclick: () => react(m, e) }, e + (n > 1 ? ' ' + n : '')))));
     }
+    if (!m.deleted_at) {
+      node.classList.add('clickable');
+      node.addEventListener('click', e => {
+        if (e.target.closest('button, a, img, .quote, input')) return;
+        if (String(window.getSelection()).length) return;
+        openMenu(m);
+      });
+    }
     const meta = el('div', { class: 'meta' });
     if (m.edited_at && !m.deleted_at) meta.append(el('span', {}, 'bearbeitet'));
     meta.append(el('span', {}, clock(m.created_at)));

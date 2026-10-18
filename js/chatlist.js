@@ -9,8 +9,47 @@ let timer = null;
 
 export function initial(name) { return (String(name || '?').trim()[0] || '?').toUpperCase(); }
 
+const MUTE_KEY = 'fc_muted_chats';
+const readMuted = () => { try { return new Set(JSON.parse(localStorage.getItem(MUTE_KEY) || '[]')); } catch { return new Set(); } };
+export function isMuted(id) { return readMuted().has(id); }
+export function toggleMute(id) {
+  const set = readMuted();
+  const now = !set.has(id);
+  if (now) set.add(id); else set.delete(id);
+  localStorage.setItem(MUTE_KEY, JSON.stringify([...set]));
+  render();
+  return now;
+}
+
+let audioCtx = null;
+function beep() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.25);
+  } catch { /* Ton nicht möglich */ }
+}
+
+// Neue Nachrichten in anderen Chats: Ton, außer der Chat ist stumm
+let inbox = null;
+function listenInbox() {
+  if (inbox) return;
+  inbox = sb.channel('inbox:' + state.me.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+    const m = p.new;
+    if (m.sender_id === state.me?.id) return;
+    refreshSoon();
+    const looking = m.chat_id === activeId && !document.hidden;
+    if (!looking && !isMuted(m.chat_id)) beep();
+  }).subscribe();
+}
+
 export function mountChatList(list, searchInput) {
   listEl = list;
+  listenInbox();
   searchInput.addEventListener('input', () => { query = searchInput.value.trim().toLowerCase(); render(); });
   return refreshChatList();
 }
@@ -61,6 +100,7 @@ function render() {
     const nameEl = el('span', { class: 'chat-name' });
     nameEl.innerHTML = t.html;
     const unread = c.unread_count > 0;
+    const muted = isMuted(c.chat_id);
     const last = c.last_message_body === '' || c.last_message_body == null
       ? (c.last_message_at ? '📷 Bild' : '') : c.last_message_body;
     const prefix = c.type === 'group' && c.last_message_sender && c.last_message_sender === state.me?.id ? 'Du: ' : '';
@@ -71,7 +111,7 @@ function render() {
           el('span', { class: 'chat-time' + (unread ? ' unread' : '') }, c.last_message_at ? fmtTime(c.last_message_at) : '')),
         el('div', { class: 'chat-line' },
           el('span', { class: 'chat-last' }, prefix + last),
-          unread ? el('span', { class: 'badge' }, c.unread_count > 99 ? '99+' : c.unread_count) : '')));
+          unread ? el('span', { class: 'badge' + (muted ? ' muted' : '') }, c.unread_count > 99 ? '99+' : c.unread_count) : (muted ? el('span', { class: 'mute-icon', title: 'Stumm' }, '🔕') : ''))));
   }));
 }
 

@@ -73,3 +73,12 @@ h4{margin:16px 0 6px}
 .admin-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--fg,#111);overflow:auto}
 
 .admin-home{position:fixed;top:calc(6px + env(safe-area-inset-top));left:8px;z-index:20;background:#fff;color:var(--red-dark,#D40000);border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:700;cursor:pointer}
+
+.emoji-row{display:flex;justify-content:space-around;gap:4px;padding:8px 4px;border-bottom:1px solid var(--border,#ddd)}
+.menu-list .emoji-row button{width:auto;display:inline-block;text-align:center;font-size:26px;padding:4px 8px;border:0;border-radius:10px}
+.menu-list .emoji-row button.on{background:rgba(255,40,0,.18)}
+.reacts{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.react-chip{background:var(--panel,#f4f4f4);color:var(--fg,#111);border:1px solid var(--border,#ddd);border-radius:12px;padding:1px 8px;font-size:14px;cursor:pointer}
+.react-chip.on{border-color:var(--red,#FF2800);background:rgba(255,40,0,.12)}
+.badge.muted{background:#9a9a9a}
+.mute-icon{font-size:13px;opacity:.7}

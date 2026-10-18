@@ -1,9 +1,10 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog } from './core.js';
 import { uploadImage, signedUrl } from './media.js';
-import { refreshSoon, initial } from './chatlist.js';
+import { refreshSoon, initial, isMuted, toggleMute } from './chatlist.js';
 
 const EDIT_MS = 3 * 24 * 3600 * 1000;
 const PAGE = 60;
+const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 let pane = null;
 let cur = null; // aktueller Chat-Zustand
@@ -54,9 +55,20 @@ export async function openChat(chatId) {
   document.body.classList.add('chat-open');
   const c = cur = {
     id: chatId, msgs: [], byId: new Map(), members: new Map(), meta: null, peer: null, dead: false,
-    typing: new Map(), online: new Set(), reply: null, editing: null, lastTyping: 0, oldestReached: false,
+    reacts: new Map(), typing: new Map(), online: new Set(), reply: null, editing: null, lastTyping: 0, oldestReached: false,
   };
 
+  const muteBtn = el('button', { class: 'icon-btn', onclick: () => {
+    const now = toggleMute(chatId);
+    showMute();
+    toast(now ? 'Chat ist stumm.' : 'Chat ist nicht mehr stumm.');
+  } });
+  const showMute = () => {
+    const m = isMuted(chatId);
+    muteBtn.textContent = m ? '🔕' : '🔔';
+    muteBtn.setAttribute('aria-label', m ? 'Stumm aufheben' : 'Chat stumm schalten');
+  };
+  showMute();
   const title = el('div', { class: 't1' });
   const sub = el('div', { class: 't2' });
   const avatar = el('div', { class: 'avatar sm' }, '…');
@@ -66,7 +78,8 @@ export async function openChat(chatId) {
     avatar,
     el('div', { class: 'info', onclick: async () => {
       try { (await import('./features/chatInfo.js')).openChatInfo(chatId); } catch { toast('Chat-Info nicht verfügbar.'); }
-    } }, title, sub));
+    } }, title, sub),
+    muteBtn);
   const msgsEl = el('div', { class: 'msgs' });
   c.msgsEl = msgsEl;
 
@@ -154,7 +167,7 @@ export async function openChat(chatId) {
   }
   renderHead();
 
-  await Promise.all([loadMembers(), loadMessages()]);
+  await Promise.all([loadMembers(), loadMessages(), loadReactions()]);
   if (c.dead) return;
   render(true);
   markRead();
@@ -190,6 +203,26 @@ export async function openChat(chatId) {
     const { data } = await sb.from('chat_members').select('user_id,last_read_at').eq('chat_id', chatId);
     c.members = new Map((data || []).map(r => [r.user_id, r.last_read_at]));
     await loadProfiles([...c.members.keys()]);
+  }
+
+  async function loadReactions() {
+    const { data } = await sb.from('message_reactions').select('message_id,user_id,emoji').eq('chat_id', chatId);
+    for (const r of data || []) setReaction(r.message_id, r.user_id, r.emoji);
+  }
+
+  function setReaction(msgId, userId, emoji) {
+    let m = c.reacts.get(msgId);
+    if (!m) c.reacts.set(msgId, m = new Map());
+    if (emoji) m.set(userId, emoji); else m.delete(userId);
+  }
+
+  async function react(m, emoji) {
+    const old = c.reacts.get(m.id)?.get(state.me.id);
+    try {
+      await call('react_message', { p_message_id: m.id, p_emoji: emoji });
+      setReaction(m.id, state.me.id, old === emoji ? null : emoji);
+      render(false);
+    } catch (e) { toast(e.message); }
   }
 
   async function loadMessages(before) {
@@ -251,6 +284,13 @@ export async function openChat(chatId) {
       p => { c.typing.delete(p.new.sender_id); addMessage(p.new, p.new.sender_id === state.me.id); });
     ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
       p => { if (c.byId.has(p.new.id)) addMessage(p.new, false).then(() => { }); });
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions', filter: `chat_id=eq.${chatId}` },
+      p => {
+        const r = p.eventType === 'DELETE' ? p.old : p.new;
+        if (!r?.message_id) return;
+        setReaction(r.message_id, r.user_id, p.eventType === 'DELETE' ? null : r.emoji);
+        render(false);
+      });
     ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_members', filter: `chat_id=eq.${chatId}` },
       p => { c.members.set(p.new.user_id, p.new.last_read_at); render(false); });
     ch.on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `id=eq.${chatId}` },
@@ -291,7 +331,10 @@ export async function openChat(chatId) {
       }, 'danger']);
     }
     if (!b.length) return;
-    const modal = openModal('Nachricht', el('div', { class: 'menu-list' },
+    const mineEmoji = c.reacts.get(m.id)?.get(state.me.id);
+    const emojiRow = m.deleted_at ? null : el('div', { class: 'emoji-row' }, EMOJIS.map(e =>
+      el('button', { class: e === mineEmoji ? 'on' : '', 'aria-label': 'Reagieren mit ' + e, onclick: () => { modal.close(); react(m, e); } }, e)));
+    const modal = openModal('Nachricht', el('div', { class: 'menu-list' }, emojiRow,
       b.map(([label, fnc, cls]) => el('button', { class: cls || '', onclick: () => { modal.close(); fnc(); } }, label))));
   }
 
@@ -322,6 +365,14 @@ export async function openChat(chatId) {
       }
       if (m.body) node.append(el('div', { class: 'body' }, m.body));
       node.append(el('button', { class: 'menu-btn', 'aria-label': 'Menü', onclick: () => openMenu(m) }, '▾'));
+    }
+    const rs = c.reacts.get(m.id);
+    if (rs?.size && !m.deleted_at) {
+      const counts = new Map();
+      for (const e of rs.values()) counts.set(e, (counts.get(e) || 0) + 1);
+      const mineEmoji = rs.get(state.me.id);
+      node.append(el('div', { class: 'reacts' }, [...counts].map(([e, n]) =>
+        el('button', { class: 'react-chip' + (e === mineEmoji ? ' on' : ''), onclick: () => react(m, e) }, e + (n > 1 ? ' ' + n : '')))));
     }
     const meta = el('div', { class: 'meta' });
     if (m.edited_at && !m.deleted_at) meta.append(el('span', {}, 'bearbeitet'));

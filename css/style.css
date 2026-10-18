@@ -197,3 +197,6 @@ label.field > input, label.field > textarea { margin-top: 4px; color: var(--text
   .msg { max-width: 86%; }
   .modal { max-height: 96vh; }
 }
+.dashbar { display: flex; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.dashbar .btn { flex: 1; padding: 8px 6px; font-size: 14px; }
+.dashbar .btn.dark { background: #222; color: #fff; }

@@ -66,6 +66,7 @@ function buildMain() {
     el('div', { class: 'topbar' }, el('img', { src: 'icons/icon.svg', width: '30', height: '30', alt: '' }), nameEl,
       el('button', { class: 'icon-btn', title: 'Neuer Chat', 'aria-label': 'Neuer Chat', onclick: openNewChat }, '＋'),
       el('button', { class: 'icon-btn', title: 'Menü', 'aria-label': 'Menü', onclick: e => { e.stopPropagation(); toggleMenu(sidebar); } }, '⋮')),
+    dashboardBar(),
     el('div', { class: 'searchbar' }, search), list);
   const pane = el('section', { id: 'chatpane' });
   app.replaceChildren(el('div', { id: 'main' }, sidebar, pane));
@@ -86,6 +87,16 @@ function buildMain() {
   const ping = () => call('touch_presence').catch(() => { });
   ping();
   presenceTimer = setInterval(ping, 60000);
+}
+
+// Große Knöpfe für Team und Owner, ganz oben in der Seitenleiste
+function dashboardBar() {
+  const role = state.profile?.global_role;
+  if (!['moderator', 'admin', 'owner'].includes(role)) return null;
+  const safe = fn => async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } };
+  return el('div', { class: 'dashbar' },
+    el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openTeamPanel()) }, '🛡 Team-Bereich'),
+    role === 'owner' ? el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Bereich') : null);
 }
 
 function toggleMenu(sidebar) {

@@ -153,7 +153,7 @@ export function avatarEditor({ value, name, seed, prefix, save, locked = false, 
       onChange?.(v);
       render();
       toast('Gespeichert');
-    } catch (e) { toast(e.message); }
+    } catch (e) { console.error('Avatar-Fehler', e); toast('Avatar-Fehler: ' + (e.message || e), 9000); }
   }
   render();
   return box;

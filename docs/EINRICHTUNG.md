@@ -134,15 +134,9 @@ supabase functions deploy register reset-with-recovery admin-reset-password
 3. Wähle Benutzernamen (3–20 Zeichen: a–z, Ziffern, Unterstrich) und ein Passwort (mindestens 8 Zeichen).
 4. **Wichtig:** Es erscheint ein **Wiederherstellungscode** (`XXXX-XXXX`). Schreibe ihn auf Papier. Er hilft, wenn du dein Passwort vergisst.
 
-## 11. Eigene Admin-PIN setzen
+## 11. Admin-Bereich
 
-Der Admin-Bereich (Menü „🔐 Admin-Bereich“, nur beim Owner) ist durch eine PIN geschützt. Du legst sie selbst fest.
-
-1. Melde dich als Owner in FlarChat an und öffne im Menü „🔐 Admin-Bereich“.
-2. Öffne „PIN setzen / ändern“, lasse „Alte PIN“ leer und gib eine neue PIN mit 8–12 Ziffern ein.
-3. **Schreibe die PIN nirgends ins Repo, in Dateien auf GitHub oder in einen Chat.**
-4. **Eine PIN, die schon einmal im Chatverlauf (beim Entwickeln) genannt wurde, darfst du NICHT verwenden.** Sie gilt als bekannt. Wähle eine neue.
-5. Später ändern: im selben Formular alte und neue PIN eingeben.
+Der Admin-Bereich (Knopf „🔐 Admin-Bereich“, nur beim Owner) braucht **keine PIN mehr**. Wer als Owner angemeldet ist, kann ihn öffnen. Führe dafür einmal die Datei `supabase/migrations/006_admin_ohne_pin.sql` im SQL Editor aus. Alle Zugriffe werden weiter im Audit-Log gespeichert.
 
 ## 12. Registrierungscodes erzeugen und Freunde einladen
 
@@ -171,7 +165,7 @@ Danach startet FlarChat wie eine normale App.
 | Nutzer | chatten |
 | Moderator | Meldungen bearbeiten, gemeldete Nachrichten löschen, verwarnen, stummschalten |
 | Admin | zusätzlich sperren, Codes erzeugen, Tickets bearbeiten (Passwort zurücksetzen) |
-| Owner | alles, Rollen vergeben, Verifiziert-Haken vergeben, Admin-Lesebereich (mit PIN) |
+| Owner | alles, Rollen vergeben, Verifiziert-Haken vergeben, Admin-Lesebereich (nur Owner) |
 
 **Gruppenrollen (nur in einer Gruppe):**
 
@@ -186,7 +180,7 @@ Globale Admins lesen **nicht automatisch** in Gruppen mit.
 
 - Der Owner kann über den geschützten Admin-Bereich Chats lesen. Das gilt auch für gelöschte und bearbeitete Nachrichten.
 - Alle Nutzer werden **offen darüber informiert**: bei der Registrierung (großer Hinweis) und in den Einstellungen.
-- Der Zugang ist nur mit der Admin-PIN möglich. Nach 5 falschen Eingaben ist er 15 Minuten gesperrt. Nach dem Entsperren bleibt er 10 Minuten offen.
+- Der Zugang ist nur für den Owner möglich. Jeder Zugriff wird protokolliert.
 - **Jeder Zugriff wird im Protokoll (Audit-Log) gespeichert.**
 - Nutze den Zugang nur, wenn es nötig ist, zum Beispiel bei Meldungen. Sage deinen Freunden und deiner Familie ehrlich, dass es ihn gibt.
 
@@ -214,12 +208,6 @@ Codes gelten nur einmal und laufen ab. Erzeuge einen neuen Code.
 
 **Ich habe alte Änderungen auf dem Handy, die App aktualisiert sich nicht.**
 Schließe die App ganz und öffne sie neu. Sonst die Seite im Browser neu laden (Cache leeren) oder die App neu installieren.
-
-**Admin-PIN gesperrt.**
-Warte 15 Minuten.
-
-**Ich habe die Admin-PIN vergessen.**
-Im SQL Editor `delete from admin_pins;` ausführen und danach im Admin-Bereich eine neue PIN setzen.
 
 **Wie viele Nutzer gehen?**
 FlarChat ist für unter 50 Nutzer gedacht. Der kostenlose Supabase-Plan reicht dafür. Er pausiert Projekte nach längerer Inaktivität. Öffne dann das Supabase-Dashboard und klicke auf **Restore**.

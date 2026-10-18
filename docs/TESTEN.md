@@ -48,14 +48,10 @@ Hake jeden Punkt ab. Nutze mindestens zwei Browser oder Geräte (oder ein Privat
 - [ ] Meldung lässt sich erledigen. Verwarnen und Stummschalten funktionieren.
 - [ ] Normale Nutzer sehen keine Meldungen.
 
-## Admin-PIN und Sperre
-- [ ] Ohne PIN zeigt der Admin-Bereich keine Chats.
-- [ ] Richtige PIN entsperrt für 10 Minuten.
-- [ ] 5 falsche Eingaben hintereinander: Sperre für 15 Minuten.
-- [ ] Auch die richtige PIN wird während der Sperre abgelehnt.
-- [ ] Nach Ablauf der 10 Minuten ist erneute Eingabe nötig.
-- [ ] Jeder Zugriff erscheint im Audit-Log.
-- [ ] Nur der Owner kann den Bereich öffnen (Admin und Moderator nicht).
+## Admin-Bereich
+- [ ] Nur der Owner sieht den Knopf und kann Chats lesen.
+- [ ] Normale Nutzer bekommen beim Aufruf der Funktionen einen Fehler.
+- [ ] Jeder Zugriff steht im Audit-Log.
 
 ## Passwort vergessen
 - [ ] Zurücksetzen mit Recovery-Code klappt und liefert einen neuen Code.

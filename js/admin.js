@@ -1,7 +1,7 @@
 import { sb, state, el, esc, toast, call, nameHtml } from './core.js';
 
 let root = document.getElementById('admin-root');
-let unlockedUntil = null, timer = null, overlay = null;
+let overlay = null;
 
 const banner = () => el('div', { class: 'admin-banner' }, 'Schreibgeschützter Admin-Zugang – alle Zugriffe werden protokolliert');
 const fmt = iso => new Date(iso).toLocaleString('de-DE');
@@ -11,14 +11,12 @@ function backBtn() {
 }
 
 function closeAdmin() {
-  clearInterval(timer);
-  unlockedUntil = null;
   overlay?.remove();
   overlay = null;
   root = null;
 }
 
-// Öffnet den Admin-Bereich als Vollbild-Ansicht innerhalb der App (PIN wird immer abgefragt)
+// Öffnet den Admin-Bereich als Vollbild-Ansicht innerhalb der App
 export function openAdmin() {
   if (overlay) return;
   root = el('div', { id: 'admin-root' });
@@ -38,74 +36,20 @@ async function init() {
     state.profile = Array.isArray(p) ? p[0] : p;
   } catch (e) { return screen(el('p', { class: 'error' }, e.message)); }
   if (state.profile?.global_role !== 'owner') return screen(el('h2', {}, 'Kein Zugriff'), el('p', {}, 'Dieser Bereich ist nur für den Owner.'), backBtn());
-  pinScreen();
-}
-
-function pinInput(ph) {
-  const i = el('input', { type: 'password', inputmode: 'numeric', autocomplete: 'off', maxlength: 12, placeholder: ph });
-  i.addEventListener('input', () => { i.value = i.value.replace(/\D/g, ''); });
-  return i;
-}
-
-function pinScreen(msg) {
-  const pin = pinInput('Admin-PIN');
-  const go = async () => {
-    try {
-      const res = await call('admin_unlock', { p_pin: pin.value });
-      if (!res) throw new Error('PIN falsch oder vorübergehend gesperrt (5 Fehlversuche = 15 Minuten Sperre).');
-      unlockedUntil = new Date(res);
-      pin.value = '';
-      mainScreen();
-    } catch (e) { toast(e.message); pin.value = ''; }
-  };
-  pin.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-
-  const oldP = pinInput('Alte PIN (leer bei erster PIN)'), newP = pinInput('Neue PIN (8–12 Ziffern)');
-  screen(el('h2', {}, 'Admin-Bereich'), msg ? el('p', {}, msg) : null,
-    el('div', { class: 'row' }, pin, el('button', { class: 'btn', onclick: go }, 'Entsperren')),
-    el('details', {}, el('summary', {}, 'PIN setzen / ändern'),
-      el('p', { class: 'muted' }, 'Noch keine PIN? Setze sie hier (altes Feld leer lassen).'),
-      oldP, newP,
-      el('button', { class: 'btn ghost', onclick: async () => {
-        try {
-          const ok = await call('admin_set_pin', { p_old: oldP.value || null, p_new: newP.value });
-          if (!ok) throw new Error('Alte PIN falsch oder gesperrt.');
-          toast('PIN gespeichert.'); oldP.value = newP.value = '';
-        }
-        catch (e) { toast(e.message); }
-      } }, 'PIN speichern')));
-  pin.focus();
+  mainScreen();
 }
 
 function mainScreen() {
-  const countdown = el('span', { class: 'countdown' });
   const view = el('div', { class: 'admin-view' });
   const tabs = el('div', { class: 'tabs' });
-  screen(el('div', { class: 'row' }, el('h2', { class: 'grow' }, 'Admin-Bereich'), el('span', {}, 'Entsperrt noch: ', countdown),
-    el('button', { class: 'btn ghost small', onclick: lock }, 'Sperren'), overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, 'Schließen') : null), tabs, view);
-
-  clearInterval(timer);
-  const tick = () => {
-    const s = Math.max(0, Math.round((unlockedUntil - Date.now()) / 1000));
-    countdown.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    if (s <= 0) lock('Entsperrung abgelaufen – bitte PIN erneut eingeben.');
-  };
-  tick(); timer = setInterval(tick, 1000);
+  screen(el('div', { class: 'row' }, el('h2', { class: 'grow' }, 'Admin-Bereich'), overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, 'Schließen') : null), tabs, view);
 
   const show = id => {
     tabs.replaceChildren(...[['chats', 'Chats'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
-    (id === 'chats' ? chatsView : auditView)(view).catch(e => {
-      if (/PIN|entsperr|gesperrt/i.test(e.message)) lock(e.message);
-      else view.replaceChildren(el('p', { class: 'error' }, e.message));
-    });
+    (id === 'chats' ? chatsView : auditView)(view).catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
   };
   show('chats');
-}
-
-function lock(msg) {
-  clearInterval(timer);
-  pinScreen(typeof msg === 'string' ? msg : null);
 }
 
 async function chatsView(view) {
@@ -136,7 +80,7 @@ async function readChat(view, chat, back) {
     view.replaceChildren(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: back }, '← Zurück'), el('strong', {}, chat.name || 'Direktchat')),
       msgs.length ? list : el('p', { class: 'muted' }, 'Keine Nachrichten.'));
   } catch (e) {
-    if (/PIN|entsperr|gesperrt/i.test(e.message)) lock(e.message); else { toast(e.message); back(); }
+    toast(e.message); back();
   }
 }
 

@@ -9,7 +9,7 @@
 - Code-Seite (GitHub): https://github.com/FlarBy-Official/FlarBy (Konto `FlarBy-Official`, Zweig `main`)
 - Die fertige App: https://flarby-official.github.io/FlarBy/
 - Supabase-Projekt (Datenbank): `vrofsgvzjjjrltixjaqd`
-- In `js/config.js` steht nur der öffentliche Schlüssel (`sb_publishable_...`). Der Schlüssel `service_role` und die Admin-PIN dürfen NIE in eine Datei oder in den Chat.
+- In `js/config.js` steht nur der öffentliche Schlüssel (`sb_publishable_...`). Der Schlüssel `service_role` darf NIE in eine Datei oder in den Chat.
 
 ## So funktioniert das Deployment (Veröffentlichen)
 

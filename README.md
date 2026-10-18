@@ -16,7 +16,7 @@ Die ganze Oberfläche ist auf Deutsch. Es gibt einen Hell- und einen Dunkelmodus
 - Verwarnen, Stummschalten, Sperren
 - Freiwillige App-PIN als Sperre auf dem Gerät
 - „Passwort vergessen“ mit Wiederherstellungscode oder Ticket
-- Geschützter Admin-Bereich für den Betreiber (mit PIN und Protokoll)
+- Geschützter Admin-Bereich für den Betreiber (nur für den Owner, mit Protokoll)
 
 ## Technik (kurz erklärt)
 

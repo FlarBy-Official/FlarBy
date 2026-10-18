@@ -162,7 +162,8 @@ export async function tabUsers(box) {
       try {
         const ips = (await call('list_user_ips', { p_user_id: u.id })) || [];
         openModal('IP-Adressen von @' + u.username, ips.length
-          ? el('div', {}, ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen)))))
+          ? el('div', {}, ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen)),
+            el('button', { class: 'btn ghost small', onclick: () => navigator.clipboard?.writeText(i.ip).then(() => toast('Kopiert'), () => toast('Kopieren geht nicht.')) }, 'Kopieren'))))
           : el('p', { class: 'muted' }, 'Noch keine IP gespeichert.'));
       } catch (e) { toast(e.message); }
     } }, 'IP'));

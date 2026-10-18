@@ -146,12 +146,13 @@ export async function tabUsers(box) {
   const me = state.profile, lvl = LEVEL[me.global_role];
   const rows = (await call('list_users')) || [];
   const avState = Object.fromEntries(((await call('avatar_state_list').catch(() => [])) || []).map(x => [x.user_id, x]));
+  const ipOf = lvl >= 2 ? Object.fromEntries(((await call('latest_user_ips').catch(() => [])) || []).map(x => [x.user_id, x.ip])) : {};
   box.replaceChildren(...rows.map(u => {
     const d = el('div', { class: 'list-row wrap' });
     d.append(avatarEl({ url: u.avatar_url, name: u.display_name || u.username, seed: u.id, cls: 'sm' }));
     const av = avState[u.id];
     const lab = el('span', { class: 'grow' });
-    lab.innerHTML = `${nameHtml({ ...u, team_role: u.global_role !== 'user' ? u.global_role : null })} <span class="muted small">@${esc(u.username)}</span>${u.banned ? ' <span class="status status-widerrufen">gesperrt</span>' : ''}${u.muted_until && new Date(u.muted_until) > new Date() ? ' <span class="status status-abgelaufen">stumm</span>' : ''}`;
+    lab.innerHTML = `${nameHtml({ ...u, team_role: u.global_role !== 'user' ? u.global_role : null })} <span class="muted small">@${esc(u.username)}</span>${ipOf[u.id] ? ` <span class="muted small">· IP ${esc(ipOf[u.id])}</span>` : ''}${u.banned ? ' <span class="status status-widerrufen">gesperrt</span>' : ''}${u.muted_until && new Date(u.muted_until) > new Date() ? ' <span class="status status-abgelaufen">stumm</span>' : ''}`;
     d.append(lab);
     if (u.id === me.id) return d;
     const b = (l, fn) => el('button', { class: 'btn ghost small', onclick: async () => { try { await fn(); toast('Gespeichert.'); tabUsers(box); } catch (e) { toast(e.message); } } }, l);

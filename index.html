@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FlarChat</title>
+<meta name="theme-color" content="#FF2800">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/features.css">
+<script>
+  (function () { var t = localStorage.getItem('fc_theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; })();
+</script>
+</head>
+<body>
+<div id="app"></div>
+<noscript>FlarChat benötigt JavaScript.</noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

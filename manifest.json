@@ -1,0 +1,14 @@
+{
+  "name": "FlarChat",
+  "short_name": "FlarChat",
+  "description": "Der Familien-Chat in Rot",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FF2800",
+  "theme_color": "#FF2800",
+  "lang": "de",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,7 @@
+.idea/
+*.iml
+.DS_Store
+supabase/.temp/
+.env
+.env.*
+node_modules/

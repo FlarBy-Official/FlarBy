@@ -1,0 +1,17 @@
+project_id = "familienchat"
+
+[auth]
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+
+[functions.register]
+verify_jwt = false
+
+[functions.reset-with-recovery]
+verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = true

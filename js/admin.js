@@ -83,6 +83,9 @@ async function readChat(view, chat, back) {
       d.innerHTML = `<div class="small">${nameHtml(pm[m.sender_id]) || esc(m.sender_id)} <span class="muted">${esc(fmt(m.created_at))}</span>${m.deleted_at ? ' <span class="status status-widerrufen">gelöscht ' + esc(fmt(m.deleted_at)) + '</span>' : ''}${edits.length ? ' <span class="status status-abgelaufen">bearbeitet</span>' : ''}</div>
         <div>${esc(m.body || '')}${m.media_path ? ' <span class="muted media-note">🖼 Bild wird geladen …</span>' : ''}</div>
         ${edits.length ? '<ul class="edits">' + edits.map(e => `<li><span class="muted small">${esc(fmt(e.edited_at))}:</span> ${esc(e.old_body)}</li>`).join('') + '</ul>' : ''}`;
+      if (!m.deleted_at) d.append(el('button', { class: 'btn ghost small', onclick: async () => {
+        try { await call('pin_message', { p_chat_id: chat.id, p_message_id: m.id }); toast('Nachricht angepinnt.'); } catch (e) { toast(e.message); }
+      } }, '📌 Anpinnen'));
       list.append(d);
       if (m.media_path) {
         const note = d.querySelector('.media-note');

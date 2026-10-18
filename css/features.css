@@ -82,3 +82,15 @@ h4{margin:16px 0 6px}
 .react-chip.on{border-color:var(--red,#FF2800);background:rgba(255,40,0,.12)}
 .badge.muted{background:#9a9a9a}
 .mute-icon{font-size:13px;opacity:.7}
+
+.pin-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--panel,#f4f4f4);border-bottom:1px solid var(--border,#ddd);font-size:14px}
+.pin-bar .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.mention{color:#0b6bcb;font-weight:600}
+.mention.me{background:rgba(255,200,0,.35);border-radius:4px;padding:0 2px}
+.poll{min-width:220px}
+.poll-q{font-weight:700;margin-bottom:6px}
+.poll-opt{position:relative;display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;margin:4px 0;padding:6px 8px;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--panel,#fff);color:var(--fg,#111);overflow:hidden;cursor:pointer;font:inherit}
+.poll-opt.on{border-color:var(--red,#FF2800)}
+.poll-bar{position:absolute;left:0;top:0;bottom:0;background:rgba(255,40,0,.15)}
+.poll-label,.poll-n{position:relative}
+.poll-opts input{display:block;width:100%;box-sizing:border-box;margin:6px 0}

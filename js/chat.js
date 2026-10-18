@@ -1,6 +1,6 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog } from './core.js';
 import { uploadImage, signedUrl } from './media.js';
-import { refreshSoon, initial, isMuted, toggleMute } from './chatlist.js';
+import { refreshSoon, initial, isMuted, toggleMute, myMentionTokens, MENTION_RE } from './chatlist.js';
 
 const EDIT_MS = 3 * 24 * 3600 * 1000;
 const PAGE = 60;
@@ -55,7 +55,7 @@ export async function openChat(chatId) {
   document.body.classList.add('chat-open');
   const c = cur = {
     id: chatId, msgs: [], byId: new Map(), members: new Map(), meta: null, peer: null, dead: false,
-    reacts: new Map(), typing: new Map(), online: new Set(), reply: null, editing: null, lastTyping: 0, oldestReached: false,
+    reacts: new Map(), polls: new Map(), votes: new Map(), pinnedId: null, canPin: false, typing: new Map(), online: new Set(), reply: null, editing: null, lastTyping: 0, oldestReached: false,
   };
 
   const muteBtn = el('button', { class: 'icon-btn', onclick: () => {
@@ -92,8 +92,11 @@ export async function openChat(chatId) {
   const composer = el('div', { class: 'composer-wrap' }, ctxBar,
     el('div', { class: 'composer' },
       el('button', { class: 'icon-btn', 'aria-label': 'Bild senden', onclick: () => file.click() }, '📎'),
+      el('button', { class: 'icon-btn', 'aria-label': 'Umfrage erstellen', onclick: () => openPollForm() }, '📊'),
       file, ta, sendBtn));
-  pane.replaceChildren(head, msgsEl, composer);
+  const pinBar = el('div', { class: 'pin-bar hidden' });
+  c.pinBar = pinBar;
+  pane.replaceChildren(head, pinBar, msgsEl, composer);
 
   ta.addEventListener('input', () => {
     ta.style.height = 'auto';
@@ -167,7 +170,7 @@ export async function openChat(chatId) {
   }
   renderHead();
 
-  await Promise.all([loadMembers(), loadMessages(), loadReactions()]);
+  await Promise.all([loadMembers(), loadMessages(), loadReactions(), loadPolls(), loadPin()]);
   if (c.dead) return;
   render(true);
   markRead();
@@ -203,6 +206,81 @@ export async function openChat(chatId) {
     const { data } = await sb.from('chat_members').select('user_id,last_read_at').eq('chat_id', chatId);
     c.members = new Map((data || []).map(r => [r.user_id, r.last_read_at]));
     await loadProfiles([...c.members.keys()]);
+  }
+
+  async function loadPolls() {
+    const [p, v] = await Promise.all([
+      sb.from('polls').select('*').eq('chat_id', chatId),
+      sb.from('poll_votes').select('poll_id,user_id,option_idx').eq('chat_id', chatId)]);
+    (p.data || []).forEach(x => c.polls.set(x.id, x));
+    (v.data || []).forEach(x => setVote(x.poll_id, x.user_id, x.option_idx));
+  }
+
+  function setVote(pollId, userId, idx) {
+    let m = c.votes.get(pollId);
+    if (!m) c.votes.set(pollId, m = new Map());
+    if (idx == null) m.delete(userId); else m.set(userId, idx);
+  }
+
+  async function vote(poll, idx) {
+    const old = c.votes.get(poll.id)?.get(state.me.id);
+    try {
+      await call('vote_poll', { p_poll_id: poll.id, p_option: idx });
+      setVote(poll.id, state.me.id, old === idx ? null : idx);
+      render(false);
+    } catch (e) { toast(e.message); }
+  }
+
+  function openPollForm() {
+    const q = el('input', { type: 'text', maxlength: '200', placeholder: 'Frage' });
+    const opts = el('div', { class: 'poll-opts' });
+    const addOpt = () => { if (opts.children.length < 6) opts.append(el('input', { type: 'text', maxlength: '80', placeholder: 'Antwort ' + (opts.children.length + 1) })); };
+    addOpt(); addOpt();
+    const m = openModal('Umfrage erstellen', el('div', {}, el('label', { class: 'field' }, 'Frage', q), opts,
+      el('div', { class: 'row end' },
+        el('button', { class: 'btn ghost', onclick: addOpt }, '+ Antwort'),
+        el('button', { class: 'btn', onclick: async () => {
+          try {
+            await call('create_poll', { p_chat_id: chatId, p_question: q.value, p_options: [...opts.querySelectorAll('input')].map(i => i.value) });
+            m.close();
+          } catch (e) { toast(e.message); }
+        } }, 'Senden'))));
+    q.focus();
+  }
+
+  async function loadPin() {
+    const { data } = await sb.from('chats').select('pinned_message_id').eq('id', chatId).maybeSingle();
+    c.pinnedId = data?.pinned_message_id || null;
+    if (state.profile && ['admin', 'owner'].includes(state.profile.global_role)) c.canPin = true;
+    else {
+      const { data: mem } = await sb.from('chat_members').select('role_id').eq('chat_id', chatId).eq('user_id', state.me.id).maybeSingle();
+      if (mem?.role_id) {
+        const { data: role } = await sb.from('chat_roles').select('permissions').eq('id', mem.role_id).maybeSingle();
+        c.canPin = !!role?.permissions?.pin_messages;
+      }
+    }
+    await showPin();
+  }
+
+  async function showPin() {
+    if (c.dead) return;
+    if (!c.pinnedId || c.meta?.type === 'direct') { c.pinBar.classList.add('hidden'); c.pinBar.replaceChildren(); return; }
+    let m = c.byId.get(c.pinnedId);
+    if (!m) { m = (await sb.from('messages').select('*').eq('id', c.pinnedId).maybeSingle()).data; }
+    if (!m || m.deleted_at) { c.pinBar.classList.add('hidden'); return; }
+    c.pinBar.classList.remove('hidden');
+    c.pinBar.replaceChildren(
+      el('div', { class: 'txt', onclick: () => jumpTo(m.id) }, '📌 ' + (m.body || '📷 Bild')),
+      c.canPin ? el('button', { class: 'icon-btn', 'aria-label': 'Pin lösen', onclick: () => pinMessage(null) }, '✕') : null);
+  }
+
+  async function pinMessage(id) {
+    try {
+      await call('pin_message', { p_chat_id: chatId, p_message_id: id });
+      c.pinnedId = id;
+      await showPin();
+      toast(id ? 'Nachricht angepinnt.' : 'Pin gelöst.');
+    } catch (e) { toast(e.message); }
   }
 
   async function loadReactions() {
@@ -256,6 +334,10 @@ export async function openChat(chatId) {
     if (c.byId.has(m.id)) { c.byId.set(m.id, Object.assign(c.byId.get(m.id), m)); const i = c.msgs.findIndex(x => x.id === m.id); if (i >= 0) c.msgs[i] = c.byId.get(m.id); }
     else { c.byId.set(m.id, m); c.msgs.push(m); }
     await loadProfiles([m.sender_id]);
+    if (m.poll_id && !c.polls.has(m.poll_id)) {
+      const pr = await sb.from('polls').select('*').eq('id', m.poll_id).maybeSingle();
+      if (pr.data) c.polls.set(pr.data.id, pr.data);
+    }
     if (m.reply_to && !c.byId.has(m.reply_to)) {
       const r = await sb.from('messages').select('*').eq('id', m.reply_to).maybeSingle();
       if (r.data) c.byId.set(r.data.id, r.data);
@@ -291,6 +373,13 @@ export async function openChat(chatId) {
         setReaction(r.message_id, r.user_id, p.eventType === 'DELETE' ? null : r.emoji);
         render(false);
       });
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes', filter: `chat_id=eq.${chatId}` },
+      p => {
+        const r = p.eventType === 'DELETE' ? p.old : p.new;
+        if (!r?.poll_id) return;
+        setVote(r.poll_id, r.user_id, p.eventType === 'DELETE' ? null : r.option_idx);
+        render(false);
+      });
     ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_members', filter: `chat_id=eq.${chatId}` },
       p => { c.members.set(p.new.user_id, p.new.last_read_at); render(false); });
     ch.on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `id=eq.${chatId}` },
@@ -298,6 +387,7 @@ export async function openChat(chatId) {
         if (p.eventType === 'DELETE') { toast('Dieser Chat wurde gelöscht.'); location.hash = '#/'; return; }
         const { data } = await sb.from('chat_overview').select('*').eq('chat_id', chatId).maybeSingle();
         if (data && !c.dead) { c.meta = data; renderHead(); }
+        loadPin().catch(() => { });
       });
     ch.subscribe(status => { if (status === 'SUBSCRIBED') ch.track({ user_id: state.me.id, at: Date.now() }); });
   }
@@ -317,6 +407,7 @@ export async function openChat(chatId) {
     if (!m.deleted_at) {
       b.push(['↩ Antworten', () => c.setContext('reply', m)]);
       if (mine && m.body && Date.now() - new Date(m.created_at) < EDIT_MS) b.push(['✎ Bearbeiten', () => c.setContext('edit', m)]);
+      if (c.canPin && c.meta?.type !== 'direct') b.push([c.pinnedId === m.id ? '📌 Pin lösen' : '📌 Anpinnen', () => pinMessage(c.pinnedId === m.id ? null : m.id)]);
       if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(m.body).then(() => toast('Kopiert'))]);
       b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen (falls berechtigt)', async () => {
         if (!(await confirmDialog('Nachricht wirklich löschen?', 'Löschen'))) return;
@@ -363,7 +454,9 @@ export async function openChat(chatId) {
           .catch(() => { img.alt = 'Bild nicht ladbar'; });
         node.append(img);
       }
-      if (m.body) node.append(el('div', { class: 'body' }, m.body));
+      const poll = m.poll_id && c.polls.get(m.poll_id);
+      if (poll) node.append(pollBlock(poll));
+      else if (m.body) node.append(el('div', { class: 'body' }, mentionNodes(m.body)));
       node.append(el('button', { class: 'menu-btn', 'aria-label': 'Menü', onclick: () => openMenu(m) }, '▾'));
     }
     const rs = c.reacts.get(m.id);
@@ -383,6 +476,36 @@ export async function openChat(chatId) {
     }
     node.append(meta);
     return node;
+  }
+
+  function mentionNodes(text) {
+    const mine = myMentionTokens(chatId);
+    const out = [];
+    let last = 0;
+    for (const mt of text.matchAll(MENTION_RE)) {
+      if (mt.index > last) out.push(text.slice(last, mt.index));
+      out.push(el('span', { class: 'mention' + (mine.has(mt[0].toLowerCase()) ? ' me' : '') }, mt[0]));
+      last = mt.index + mt[0].length;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+
+  function pollBlock(poll) {
+    const votes = c.votes.get(poll.id) || new Map();
+    const total = votes.size;
+    const mineIdx = votes.get(state.me.id);
+    return el('div', { class: 'poll' },
+      el('div', { class: 'poll-q' }, '📊 ' + poll.question),
+      poll.options.map((o, i) => {
+        const n = [...votes.values()].filter(v => v === i).length;
+        const pct = total ? Math.round(n * 100 / total) : 0;
+        return el('button', { class: 'poll-opt' + (mineIdx === i ? ' on' : ''), onclick: () => vote(poll, i) },
+          el('span', { class: 'poll-bar', style: `width:${pct}%` }),
+          el('span', { class: 'poll-label' }, o),
+          el('span', { class: 'poll-n' }, `${n} (${pct}%)`));
+      }),
+      el('div', { class: 'muted small' }, total === 1 ? '1 Stimme' : `${total} Stimmen`));
   }
 
   function jumpTo(id) {

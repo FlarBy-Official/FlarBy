@@ -34,6 +34,36 @@ function beep() {
   } catch { /* Ton nicht möglich */ }
 }
 
+// Erwähnungen: @benutzername oder @rolle (Rolle ohne Leerzeichen, klein geschrieben)
+const MENTION_KEY = 'fc_mention_chats';
+const MENTION_RE = /@[\p{L}\p{N}_]+/gu;
+let roleNames = new Map(); // chat_id -> Rollenname ohne Leerzeichen
+const readMentions = () => { try { return new Set(JSON.parse(localStorage.getItem(MENTION_KEY) || '[]')); } catch { return new Set(); } };
+const writeMentions = set => localStorage.setItem(MENTION_KEY, JSON.stringify([...set]));
+
+export function myMentionTokens(chatId) {
+  const t = new Set();
+  const u = state.profile?.username || state.pub?.username;
+  if (u) t.add('@' + u.toLowerCase());
+  const r = roleNames.get(chatId);
+  if (r) t.add('@' + r);
+  return t;
+}
+export function mentionsMe(body, chatId) {
+  if (!body) return false;
+  const mine = myMentionTokens(chatId);
+  return (body.toLowerCase().match(MENTION_RE) || []).some(x => mine.has(x));
+}
+export { MENTION_RE };
+
+async function loadRoleNames() {
+  const ids = [...new Set(items.map(c => c.my_role_id).filter(Boolean))];
+  if (!ids.length) return;
+  const { data } = await sb.from('chat_roles').select('id,name').in('id', ids);
+  const byId = new Map((data || []).map(r => [r.id, String(r.name).toLowerCase().replace(/\s+/g, '')]));
+  roleNames = new Map(items.filter(c => byId.has(c.my_role_id)).map(c => [c.chat_id, byId.get(c.my_role_id)]));
+}
+
 // Neue Nachrichten in anderen Chats: Ton, außer der Chat ist stumm
 let inbox = null;
 function listenInbox() {
@@ -43,7 +73,9 @@ function listenInbox() {
     if (m.sender_id === state.me?.id) return;
     refreshSoon();
     const looking = m.chat_id === activeId && !document.hidden;
-    if (!looking && !isMuted(m.chat_id)) beep();
+    const mention = mentionsMe(m.body, m.chat_id);
+    if (mention && !looking) { const set = readMentions(); set.add(m.chat_id); writeMentions(set); render(); }
+    if (!looking && (mention || !isMuted(m.chat_id))) beep();
   }).subscribe();
 }
 
@@ -56,6 +88,7 @@ export function mountChatList(list, searchInput) {
 
 export function setActiveChat(id) {
   activeId = id;
+  if (id) { const set = readMentions(); if (set.delete(id)) writeMentions(set); }
   render();
 }
 
@@ -69,6 +102,7 @@ export async function refreshChatList() {
   const { data, error } = await sb.from('chat_overview').select('*');
   if (error) { listEl.replaceChildren(el('div', { class: 'empty' }, 'Chats konnten nicht geladen werden.')); return; }
   items = data || [];
+  await loadRoleNames().catch(() => { });
   const ids = [...new Set(items.map(c => c.peer_user_id).filter(Boolean))];
   if (ids.length) {
     const r = await sb.from('profiles_public').select('*').in('id', ids);
@@ -101,6 +135,7 @@ function render() {
     nameEl.innerHTML = t.html;
     const unread = c.unread_count > 0;
     const muted = isMuted(c.chat_id);
+    const mentioned = readMentions().has(c.chat_id);
     const last = c.last_message_body === '' || c.last_message_body == null
       ? (c.last_message_at ? '📷 Bild' : '') : c.last_message_body;
     const prefix = c.type === 'group' && c.last_message_sender && c.last_message_sender === state.me?.id ? 'Du: ' : '';
@@ -111,6 +146,7 @@ function render() {
           el('span', { class: 'chat-time' + (unread ? ' unread' : '') }, c.last_message_at ? fmtTime(c.last_message_at) : '')),
         el('div', { class: 'chat-line' },
           el('span', { class: 'chat-last' }, prefix + last),
+          mentioned ? el('span', { class: 'badge', title: 'Du wurdest erwähnt' }, '@') : '',
           unread ? el('span', { class: 'badge' + (muted ? ' muted' : '') }, c.unread_count > 99 ? '99+' : c.unread_count) : (muted ? el('span', { class: 'mute-icon', title: 'Stumm' }, '🔕') : ''))));
   }));
 }

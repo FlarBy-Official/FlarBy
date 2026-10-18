@@ -80,13 +80,18 @@ async function readChat(view, chat, back) {
       const d = el('div', { class: 'admin-msg' + (m.deleted_at ? ' deleted' : '') });
       const edits = Array.isArray(m.edits) ? m.edits : [];
       d.innerHTML = `<div class="small">${nameHtml(pm[m.sender_id]) || esc(m.sender_id)} <span class="muted">${esc(fmt(m.created_at))}</span>${m.deleted_at ? ' <span class="status status-widerrufen">gelöscht ' + esc(fmt(m.deleted_at)) + '</span>' : ''}${edits.length ? ' <span class="status status-abgelaufen">bearbeitet</span>' : ''}</div>
-        <div>${esc(m.body || '')}${m.media_path ? ' <span class="muted">[Bild]</span>' : ''}</div>
+        <div>${esc(m.body || '')}${m.media_path ? ' <span class="muted media-note">🖼 Bild wird geladen …</span>' : ''}</div>
         ${edits.length ? '<ul class="edits">' + edits.map(e => `<li><span class="muted small">${esc(fmt(e.edited_at))}:</span> ${esc(e.old_body)}</li>`).join('') + '</ul>' : ''}`;
       list.append(d);
       if (m.media_path) {
-        signedUrl(m.media_path).then(url => d.append(el('a', { href: url, target: '_blank', rel: 'noopener' },
-          el('img', { src: url, alt: 'Bild', style: 'max-width:240px;max-height:240px;border-radius:8px;display:block;margin-top:6px' }))))
-          .catch(() => d.append(el('p', { class: 'muted small' }, 'Bild konnte nicht geladen werden.')));
+        const note = d.querySelector('.media-note');
+        const fail = msg => { if (note) note.textContent = '🖼 Bild-Fehler: ' + msg; };
+        signedUrl(m.media_path).then(url => {
+          if (note) note.remove();
+          const img = el('img', { src: url, alt: 'Bild', style: 'max-width:240px;max-height:240px;border-radius:8px;display:block;margin-top:6px' });
+          img.onerror = () => d.append(el('p', { class: 'error small' }, 'Bild-Fehler: Datei konnte nicht angezeigt werden.'));
+          d.append(el('a', { href: url, target: '_blank', rel: 'noopener' }, img));
+        }).catch(e => fail(e.message || 'unbekannt'));
       }
     }
     view.replaceChildren(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: back }, '← Zurück'), el('strong', {}, chat.name || 'Direktchat')),

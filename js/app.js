@@ -95,8 +95,9 @@ function dashboardBar() {
   if (!['moderator', 'admin', 'owner'].includes(role)) return null;
   const safe = fn => async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } };
   return el('div', { class: 'dashbar' },
-    el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openTeamPanel()) }, '🛡 Team-Bereich'),
-    role === 'owner' ? el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Bereich') : null);
+    role === 'owner'
+      ? el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Panel')
+      : el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openTeamPanel()) }, '🛡 Team-Bereich'));
 }
 
 function toggleMenu(sidebar) {
@@ -108,10 +109,10 @@ function toggleMenu(sidebar) {
     const s = await import('./features/settings.js');
     s.applyTheme(s.isDark() ? 'light' : 'dark');
   }]);
-  if (['moderator', 'admin', 'owner'].includes(role)) {
+  if (role === 'owner') items.push(['🔐 Admin-Panel', () => import('./admin.js').then(m => m.openAdmin())]);
+  else if (['moderator', 'admin'].includes(role)) {
     items.push(['🛡 Team-Bereich', async () => (await import('./features/team.js')).openTeamPanel()]);
   }
-  if (role === 'owner') items.push(['🔐 Admin-Bereich', () => import('./admin.js').then(m => m.openAdmin())]);
   items.push(['Abmelden', () => sb.auth.signOut()]);
   sidebar.append(el('div', { class: 'dropdown' }, items.map(([label, fn]) =>
     el('button', { onclick: async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } } }, label))));

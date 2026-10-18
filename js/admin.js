@@ -3,7 +3,7 @@ import { sb, state, el, esc, toast, call, nameHtml } from './core.js';
 let root = document.getElementById('admin-root');
 let overlay = null;
 
-const banner = () => el('div', { class: 'admin-banner' }, 'Schreibgeschützter Admin-Zugang – alle Zugriffe werden protokolliert');
+const banner = () => el('div', { class: 'admin-banner' }, 'Admin-Panel – Chat-Zugriffe werden protokolliert');
 const fmt = iso => new Date(iso).toLocaleString('de-DE');
 
 function backBtn() {
@@ -42,12 +42,18 @@ async function init() {
 function mainScreen() {
   const view = el('div', { class: 'admin-view' });
   const tabs = el('div', { class: 'tabs' });
-  screen(el('div', { class: 'row' }, el('h2', { class: 'grow' }, 'Admin-Bereich'), overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, 'Schließen') : null), tabs, view);
+  screen(el('div', { class: 'row' }, el('h2', { class: 'grow' }, 'Admin-Panel'), overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, 'Schließen') : null), tabs, view);
 
   const show = id => {
-    tabs.replaceChildren(...[['chats', 'Chats'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
+    tabs.replaceChildren(...[['chats', 'Chats'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
-    (id === 'chats' ? chatsView : auditView)(view).catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
+    const load = async () => {
+      if (id === 'chats') return chatsView(view);
+      if (id === 'audit') return auditView(view);
+      const t = await import('./features/team.js');
+      return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers })[id](view);
+    };
+    load().catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
   };
   show('chats');
 }

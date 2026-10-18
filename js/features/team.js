@@ -41,7 +41,7 @@ async function profMap(ids) {
   return Object.fromEntries((data || []).map(p => [p.id, p]));
 }
 
-async function tabReports(box) {
+export async function tabReports(box) {
   const rows = (await call('list_reports')) || [];
   const pm = await profMap(rows.map(r => r.reporter_id));
   if (!rows.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine Meldungen.'));
@@ -75,7 +75,7 @@ async function reportDetail(r, reload) {
   const m = openModal('Meldung', el('div', {}, el('p', {}, el('strong', {}, 'Grund: '), r.reason), list, actions), { wide: true });
 }
 
-async function tabTickets(box) {
+export async function tabTickets(box) {
   const rows = (await call('list_tickets')) || [];
   if (!rows.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine Tickets.'));
   box.replaceChildren(...rows.map(t => {
@@ -108,7 +108,7 @@ async function resetPassword(t, reload) {
   } catch (e) { toast(e.message); }
 }
 
-async function tabUsers(box) {
+export async function tabUsers(box) {
   const me = state.profile, lvl = LEVEL[me.global_role];
   const rows = (await call('list_users')) || [];
   box.replaceChildren(...rows.map(u => {

@@ -116,8 +116,9 @@ export async function openChatInfo(chatId) {
       el('div', { class: 'info-head' },
         avatarEl({ url: peer.avatar_url, name: peer.display_name || peer.username, seed: peer.id, cls: 'lg' }),
         el('div', {}, title, el('div', { class: 'muted' }, '@' + (peer.username || '')))),
-      peer.avatar_url && peer.id ? el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: () => openAvatarReport('user', peer.id) }, '🚩 Avatar melden')) : '',
-      el('div', { class: 'row end' }, el('button', { class: 'btn danger', onclick: async () => {
+      el('div', { class: 'row end' },
+        peer.id ? el('button', { class: 'btn ghost', onclick: () => openAvatarReport('user', peer.id) }, '🚩 Avatar melden') : '',
+        el('button', { class: 'btn danger', onclick: async () => {
         if (!await confirmDialog('Chat verlassen und aus deiner Liste entfernen?', 'Entfernen')) return;
         try { await call('leave_chat', { p_chat_id: chatId }); m.close(); window.dispatchEvent(new CustomEvent('flarchat:chat-left', { detail: { chatId } })); }
         catch (e) { toast(e.message); }

@@ -91,10 +91,9 @@ export function renderAuth(root, { onLogin, notice } = {}) {
   function showRegister() {
     const u = field('Benutzername (a–z, 0–9, _; 3–20 Zeichen)', { type: 'text', autocomplete: 'username', autocapitalize: 'none', maxlength: '20' });
     const p = field('Passwort (mind. 8 Zeichen)', { type: 'password', autocomplete: 'new-password' });
-    const c = field('Einladungs- bzw. Registrierungscode', { type: 'text', autocomplete: 'off', inputmode: 'numeric', placeholder: '1111-1111-1111' });
     const err = el('div', { class: 'error' });
     const btn = el('button', { class: 'btn block', type: 'submit' }, 'Registrieren');
-    const form = el('form', {}, u.node, p.node, c.node,
+    const form = el('form', {}, u.node, p.node,
       el('div', { class: 'notice-big' }, NOTICE), err, btn);
     form.addEventListener('submit', e => {
       e.preventDefault();
@@ -104,8 +103,7 @@ export function renderAuth(root, { onLogin, notice } = {}) {
         if (!USER_RE.test(username)) { err.textContent = 'Ungültiger Benutzername.'; return; }
         if (p.input.value.length < 8) { err.textContent = 'Das Passwort muss mindestens 8 Zeichen haben.'; return; }
         try {
-          const code = c.input.value.replace(/\D/g, '');
-          const r = await fn('register', { username, password: p.input.value, code });
+          const r = await fn('register', { username, password: p.input.value });
           show(recoveryView(r.recovery_code, async () => {
             try { await login(username, p.input.value); onLogin && onLogin(); }
             catch (x) { showLogin(); toast(x.message); }

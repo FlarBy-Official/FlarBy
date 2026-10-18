@@ -89,7 +89,8 @@ export async function openChat(chatId) {
   c.ta = ta;
   const file = el('input', { type: 'file', accept: 'image/*', class: 'hidden' });
   const sendBtn = el('button', { class: 'icon-btn send', 'aria-label': 'Senden' }, '➤');
-  const composer = el('div', { class: 'composer-wrap' }, ctxBar,
+  const mentionBox = el('div', { class: 'mention-box hidden' });
+  const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar,
     el('div', { class: 'composer' },
       el('button', { class: 'icon-btn', 'aria-label': 'Bild senden', onclick: () => file.click() }, '📎'),
       el('button', { class: 'icon-btn', 'aria-label': 'Umfrage erstellen', onclick: () => openPollForm() }, '📊'),
@@ -98,7 +99,33 @@ export async function openChat(chatId) {
   c.pinBar = pinBar;
   pane.replaceChildren(head, pinBar, msgsEl, composer);
 
+  function updateMentions() {
+    const pos = ta.selectionStart ?? ta.value.length;
+    const m = /(^|\s)@([\p{L}\p{N}_]*)$/u.exec(ta.value.slice(0, pos));
+    if (!m) { mentionBox.classList.add('hidden'); return; }
+    const q = m[2].toLowerCase();
+    const cands = [];
+    for (const id of c.members.keys()) {
+      const p = profCache.get(id);
+      if (p?.username && id !== state.me.id) cands.push({ tag: p.username, label: p.display_name && p.display_name !== p.username ? p.display_name : '', icon: '👤' });
+    }
+    if (c.canMentionRoles) for (const r of c.roleList || []) cands.push({ tag: r.name.toLowerCase().replace(/\s+/g, ''), label: 'Rolle', icon: '🏷' });
+    const hits = cands.filter(x => x.tag.toLowerCase().startsWith(q)).sort((a, b) => a.tag.localeCompare(b.tag, 'de')).slice(0, 8);
+    if (!hits.length) { mentionBox.classList.add('hidden'); return; }
+    mentionBox.classList.remove('hidden');
+    mentionBox.replaceChildren(...hits.map(h => el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
+      const start = pos - q.length - 1;
+      ta.value = ta.value.slice(0, start) + '@' + h.tag + ' ' + ta.value.slice(pos);
+      const np = start + h.tag.length + 2;
+      ta.setSelectionRange(np, np);
+      mentionBox.classList.add('hidden');
+      ta.focus();
+    } }, `${h.icon} @${h.tag}` + (h.label ? ` · ${h.label}` : ''))));
+  }
+  ta.addEventListener('keyup', e => { if (!['Enter'].includes(e.key)) updateMentions(); });
+  ta.addEventListener('click', updateMentions);
   ta.addEventListener('input', () => {
+    updateMentions();
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
     if (Date.now() - c.lastTyping > 2500 && c.channel) {
@@ -259,6 +286,8 @@ export async function openChat(chatId) {
         c.canPin = !!role?.permissions?.pin_messages;
       }
     }
+    c.canMentionRoles = !!(state.profile && ['admin', 'owner'].includes(state.profile.global_role));
+    if (c.canMentionRoles) c.roleList = (await sb.from('chat_roles').select('name').eq('chat_id', chatId)).data || [];
     await showPin();
   }
 

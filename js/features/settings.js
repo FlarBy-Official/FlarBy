@@ -45,7 +45,7 @@ export function openSettings() {
       toast('Gespeichert');
     } }, 'Speichern'),
     prev,
-    el('div', { class: 'muted small', style: 'margin-top:8px' }, 'Bei der Anmeldung wird deine IP-Adresse gespeichert. Nur Owner und Admin sehen sie.')));
+    el('div', { class: 'muted small', style: 'margin-top:8px' }, 'Hallo!')));
 
   // Profilbild
   const avBox = el('div', {}, el('span', { class: 'muted small' }, 'Lade …'));

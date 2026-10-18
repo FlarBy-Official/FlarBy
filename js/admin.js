@@ -21,7 +21,8 @@ function closeAdmin() {
 export function openAdmin() {
   if (overlay) return;
   root = el('div', { id: 'admin-root' });
-  overlay = el('div', { class: 'admin-overlay' }, root);
+  overlay = el('div', { class: 'admin-overlay' }, root,
+    el('button', { class: 'admin-home', onclick: closeAdmin }, '← Zurück'));
   document.body.append(overlay);
   init();
 }
@@ -43,7 +44,7 @@ async function init() {
 function mainScreen() {
   const view = el('div', { class: 'admin-view' });
   const tabs = el('div', { class: 'tabs' });
-  screen(el('div', { class: 'row' }, overlay ? el('button', { class: 'btn small', onclick: closeAdmin }, '← Zurück') : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
+  screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
     tabs.replaceChildren(...[['chats', 'Chats'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));

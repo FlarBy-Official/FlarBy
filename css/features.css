@@ -71,3 +71,5 @@ h4{margin:16px 0 6px}
 .audit th,.audit td{border-bottom:1px solid var(--border,#ddd);padding:6px;text-align:left;vertical-align:top;word-break:break-word}
 .admin-wrap details{margin-top:20px}
 .admin-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--fg,#111);overflow:auto}
+
+.admin-home{position:fixed;top:calc(6px + env(safe-area-inset-top));left:8px;z-index:20;background:#fff;color:var(--red-dark,#D40000);border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:700;cursor:pointer}

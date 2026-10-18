@@ -157,6 +157,14 @@ export async function tabUsers(box) {
     const b = (l, fn) => el('button', { class: 'btn ghost small', onclick: async () => { try { await fn(); toast('Gespeichert.'); tabUsers(box); } catch (e) { toast(e.message); } } }, l);
     const targetLvl = LEVEL[u.global_role] ?? 0;
     if (av?.removals) lab.innerHTML += ` <span class="muted small">Avatar entfernt: ${av.removals}×</span>${av.locked ? ' <span class="status status-widerrufen">Avatare gesperrt</span>' : ''}`;
+    if (lvl >= 2) d.append(el('button', { class: 'btn ghost small', onclick: async () => {
+      try {
+        const ips = (await call('list_user_ips', { p_user_id: u.id })) || [];
+        openModal('IP-Adressen von @' + u.username, ips.length
+          ? el('div', {}, ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen)))))
+          : el('p', { class: 'muted' }, 'Noch keine IP gespeichert.'));
+      } catch (e) { toast(e.message); }
+    } }, 'IP'));
     if (u.avatar_url) d.append(b('Avatar entfernen', async () => {
       const t = await ask('Avatar entfernen', 'Grund (freiwillig)');
       if (t === null) throw new Error('Abgebrochen.');

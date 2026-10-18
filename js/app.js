@@ -86,6 +86,7 @@ function buildMain() {
     async () => { await loadProfile(state.me); refreshName(); });
   appChannel.subscribe();
 
+  call('record_login_ip').catch(() => { });
   const ping = () => call('touch_presence').catch(() => { });
   ping();
   presenceTimer = setInterval(ping, 60000);

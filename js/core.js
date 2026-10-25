@@ -88,7 +88,8 @@ export function fmtTime(iso) {
 
 // Formatierung: **fett**, //kursiv//, __unterstrichen__ (auch gemischt) und @Erwähnungen.
 // Ohne zweites Zeichen endet die Formatierung bei der nächsten @Erwähnung, sonst bleibt der Text normal.
-// mine = Set eigener Erwähnungen (klein geschrieben). Ohne mine werden Erwähnungen nicht hervorgehoben.
+// mine = Set eigener Erwähnungen (klein geschrieben). Ohne mine und onMention werden Erwähnungen nicht hervorgehoben.
+// onMention(token) wird beim Klick auf eine Erwähnung aufgerufen.
 const FMT_RE = /\*\*|__|(?<!:)\/\/|@[\p{L}\p{N}_]+/gu;
 const FMT_TAG = { '**': 'strong', '//': 'em', '__': 'u' };
 
@@ -96,7 +97,7 @@ export function plainText(text) {
   return richNodes(text || '').map(n => n.textContent).join('');
 }
 
-export function richNodes(text, { mine } = {}) {
+export function richNodes(text, { mine, onMention } = {}) {
   text = text || '';
   const toks = [];
   let last = 0;
@@ -132,8 +133,11 @@ export function richNodes(text, { mine } = {}) {
       if (k.t === 'mark' && e && e.to <= to) {
         out.push(el(FMT_TAG[k.s], {}, render(i + 1, e.to)));
         i = e.closed ? e.to : e.to - 1;
-      } else if (k.t === 'mention' && mine) {
-        out.push(el('span', { class: 'mention' + (mine.has(k.s.toLowerCase()) ? ' me' : '') }, k.s));
+      } else if (k.t === 'mention' && (mine || onMention)) {
+        out.push(el('span', {
+          class: 'mention' + (mine?.has(k.s.toLowerCase()) ? ' me' : '') + (onMention ? ' click' : ''),
+          onclick: onMention ? e => { e.stopPropagation(); onMention(k.s); } : null,
+        }, k.s));
       } else out.push(k.s);
     }
     return out;

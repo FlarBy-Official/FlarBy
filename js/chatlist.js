@@ -1,5 +1,6 @@
 import { sb, state, el, richNodes, nameHtml, esc, fmtTime, toast, call, openModal } from './core.js';
 import { avatarEl } from './avatar.js';
+import { openMention } from './features/mentions.js';
 
 let listEl = null;
 let items = [];
@@ -146,7 +147,7 @@ function render() {
         el('div', { class: 'chat-line' }, nameEl,
           el('span', { class: 'chat-time' + (unread ? ' unread' : '') }, c.last_message_at ? fmtTime(c.last_message_at) : '')),
         el('div', { class: 'chat-line' },
-          el('span', { class: 'chat-last' }, prefix, c.last_message_body ? richNodes(last) : last),
+          el('span', { class: 'chat-last' }, prefix, c.last_message_body ? richNodes(last, { onMention: t => openMention(t, c.chat_id) }) : last),
           mentioned ? el('span', { class: 'badge', title: 'Du wurdest erwähnt' }, '@') : '',
           unread ? el('span', { class: 'badge' + (muted ? ' muted' : '') }, c.unread_count > 99 ? '99+' : c.unread_count) : (muted ? el('span', { class: 'mute-icon', title: 'Stumm' }, '🔕') : ''))));
   }));

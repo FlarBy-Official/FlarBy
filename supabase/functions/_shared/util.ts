@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "./cors.ts";
 
 export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
+export const RESERVED_NAMES = ["everyone", "admin", "owner", "moderator", "mitglied"];
 export const MIN_PASSWORD = 8;
 export const PSEUDO_DOMAIN = "flarchat.local";
 

@@ -1,4 +1,5 @@
-import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, plainText } from './core.js';
+import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes } from './core.js';
+import { openMention } from './features/mentions.js';
 import { uploadImage, signedUrl } from './media.js';
 import { fillAvatar, avatarEl } from './avatar.js';
 import { refreshSoon, initial, isMuted, toggleMute, myMentionTokens } from './chatlist.js';
@@ -301,7 +302,7 @@ export async function openChat(chatId) {
     if (!m || m.deleted_at) { c.pinBar.classList.add('hidden'); return; }
     c.pinBar.classList.remove('hidden');
     c.pinBar.replaceChildren(
-      el('div', { class: 'txt', onclick: () => jumpTo(m.id) }, '📌 ', m.body ? richNodes(m.body) : '📷 Bild'),
+      el('div', { class: 'txt', onclick: () => jumpTo(m.id) }, '📌 ', m.body ? richNodes(m.body, { onMention: t => openMention(t, chatId) }) : '📷 Bild'),
       c.canPin ? el('button', { class: 'icon-btn', 'aria-label': 'Pin lösen', onclick: () => pinMessage(null) }, '✕') : null);
   }
 
@@ -474,7 +475,7 @@ export async function openChat(chatId) {
       const q = el('div', { class: 'quote', onclick: () => jumpTo(m.reply_to) });
       const qn = el('div', { class: 'qn' });
       qn.innerHTML = r ? nameHtml(profCache.get(r.sender_id)) : '';
-      q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body) : '📷 Bild'));
+      q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body, { onMention: t => openMention(t, chatId) }) : '📷 Bild'));
       node.append(q);
     }
     if (m.deleted_at) {
@@ -488,7 +489,7 @@ export async function openChat(chatId) {
       }
       const poll = m.poll_id && c.polls.get(m.poll_id);
       if (poll) node.append(pollBlock(poll));
-      else if (m.body) node.append(el('div', { class: 'body' }, richNodes(m.body, { mine: myMentionTokens(chatId) })));
+      else if (m.body) node.append(el('div', { class: 'body' }, richNodes(m.body, { mine: myMentionTokens(chatId), onMention: t => openMention(t, chatId) })));
       node.append(el('button', { class: 'menu-btn', 'aria-label': 'Menü', onclick: () => openMenu(m) }, '▾'));
     }
     const rs = c.reacts.get(m.id);

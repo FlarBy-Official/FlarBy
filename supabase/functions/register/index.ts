@@ -10,6 +10,7 @@ import {
   pseudoEmail,
   readBody,
   USERNAME_RE,
+  RESERVED_NAMES,
 } from "../_shared/util.ts";
 
 Deno.serve(async (req) => {
@@ -29,6 +30,9 @@ Deno.serve(async (req) => {
       return fail(
         "Benutzername: 3–20 Zeichen, nur Kleinbuchstaben, Ziffern und Unterstrich.",
       );
+    }
+    if (RESERVED_NAMES.includes(username)) {
+      return fail("Dieser Benutzername ist nicht erlaubt.");
     }
     if (password.length < MIN_PASSWORD) {
       return fail(`Das Passwort muss mindestens ${MIN_PASSWORD} Zeichen lang sein.`);

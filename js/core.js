@@ -85,3 +85,58 @@ export function fmtTime(iso) {
   return same ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
     : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
+
+// Formatierung: **fett**, //kursiv//, __unterstrichen__ (auch gemischt) und @Erwähnungen.
+// Ohne zweites Zeichen endet die Formatierung bei der nächsten @Erwähnung, sonst bleibt der Text normal.
+// mine = Set eigener Erwähnungen (klein geschrieben). Ohne mine werden Erwähnungen nicht hervorgehoben.
+const FMT_RE = /\*\*|__|(?<!:)\/\/|@[\p{L}\p{N}_]+/gu;
+const FMT_TAG = { '**': 'strong', '//': 'em', '__': 'u' };
+
+export function plainText(text) {
+  return richNodes(text || '').map(n => n.textContent).join('');
+}
+
+export function richNodes(text, { mine } = {}) {
+  text = text || '';
+  const toks = [];
+  let last = 0;
+  for (const m of text.matchAll(FMT_RE)) {
+    if (m.index > last) toks.push({ t: 'text', s: text.slice(last, m.index) });
+    toks.push({ t: m[0][0] === '@' ? 'mention' : 'mark', s: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) toks.push({ t: 'text', s: text.slice(last) });
+
+  const hasContent = (a, b) => toks.slice(a, b).some(k => k.t !== 'mark' && k.s.trim());
+  const end = new Map(); // Start-Index -> { to, closed }
+  const stack = [];
+  toks.forEach((k, i) => {
+    if (k.t !== 'mark') return;
+    const j = stack.findLastIndex(o => toks[o].s === k.s);
+    if (j >= 0 && hasContent(stack[j] + 1, i)) {
+      end.set(stack[j], { to: i, closed: true });
+      stack.length = j;
+    } else stack.push(i);
+  });
+  toks.forEach((k, i) => {
+    if (k.t !== 'mark' || end.has(i)) return;
+    const m = toks.findIndex((x, n) => n > i && x.t === 'mention');
+    if (m > 0 && hasContent(i + 1, m)) end.set(i, { to: m, closed: false });
+  });
+
+  const render = (from, to) => {
+    const out = [];
+    for (let i = from; i < to; i++) {
+      const k = toks[i];
+      const e = end.get(i);
+      if (k.t === 'mark' && e && e.to <= to) {
+        out.push(el(FMT_TAG[k.s], {}, render(i + 1, e.to)));
+        i = e.closed ? e.to : e.to - 1;
+      } else if (k.t === 'mention' && mine) {
+        out.push(el('span', { class: 'mention' + (mine.has(k.s.toLowerCase()) ? ' me' : '') }, k.s));
+      } else out.push(k.s);
+    }
+    return out;
+  };
+  return render(0, toks.length).map(n => typeof n === 'string' ? document.createTextNode(n) : n);
+}

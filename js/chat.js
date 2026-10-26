@@ -445,6 +445,7 @@ export async function openChat(chatId) {
       if (mine && m.body && Date.now() - new Date(m.created_at) < EDIT_MS) b.push(['✎ Bearbeiten', () => c.setContext('edit', m)]);
       if (c.canPin && c.meta?.type !== 'direct') b.push([c.pinnedId === m.id ? '📌 Pin lösen' : '📌 Anpinnen', () => pinMessage(c.pinnedId === m.id ? null : m.id)]);
       if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(m.body).then(() => toast('Kopiert'))]);
+      b.push(['⏰ Erinnern', () => openRemind(m)]);
       b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen (falls berechtigt)', async () => {
         if (!(await confirmDialog('Nachricht wirklich löschen?', 'Löschen'))) return;
         try {
@@ -463,6 +464,34 @@ export async function openChat(chatId) {
       el('button', { class: e === mineEmoji ? 'on' : '', 'aria-label': 'Reagieren mit ' + e, onclick: () => { modal.close(); react(m, e); } }, e)));
     const modal = openModal('Nachricht', el('div', { class: 'menu-list' }, emojiRow,
       b.map(([label, fnc, cls]) => el('button', { class: cls || '', onclick: () => { modal.close(); fnc(); } }, label))));
+  }
+
+  function openRemind(m) {
+    const now = new Date();
+    const at = (d, h) => { const x = new Date(d); x.setHours(h, 0, 0, 0); return x; };
+    const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+    const evening = now.getHours() >= 17
+      ? ['In 3 Stunden', new Date(Date.now() + 3 * 3600000)]
+      : ['Heute Abend', at(now, 18)];
+    const opts = [['In 1 Stunde', new Date(Date.now() + 3600000)], evening, ['Morgen', at(tomorrow, 9)]];
+    const set = async (d) => {
+      try {
+        await call('create_reminder', { p_message_id: m.id, p_remind_at: d.toISOString() });
+        modal.close();
+        toast('Erinnerung gesetzt');
+      } catch (e) { toast(e.message); }
+    };
+    const pad = n => String(n).padStart(2, '0');
+    const loc = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    const inp = el('input', { type: 'datetime-local', min: loc(now) });
+    const modal = openModal('Erinnern', el('div', { class: 'remind-opts' },
+      opts.map(([label, d]) => el('button', { class: 'btn', onclick: () => set(d) }, label)),
+      el('label', {}, 'Eigene Zeit', inp),
+      el('button', { class: 'btn ghost', onclick: () => {
+        const d = new Date(inp.value);
+        if (!inp.value || isNaN(d) || d <= new Date()) return toast('Bitte eine Zeit in der Zukunft wählen.');
+        set(d);
+      } }, 'Eigene Zeit setzen')));
   }
 
   function bubble(m) {

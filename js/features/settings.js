@@ -37,6 +37,7 @@ export function openSettings() {
     el('button', { class: 'btn', onclick: async () => {
       const v = dn.value.trim();
       if (!v) return toast('Der Anzeigename darf nicht leer sein.');
+      if (!/^[\p{L}\p{N} _.-]+$/u.test(v)) return toast('Keine Sonderzeichen erlaubt. Nur Buchstaben, Zahlen, Leerzeichen und _ - .');
       const { error } = await sb.from('profiles').update({ display_name: v }).eq('id', state.me.id);
       if (error) return toast(error.message);
       p.display_name = v;

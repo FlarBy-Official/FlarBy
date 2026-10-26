@@ -58,6 +58,10 @@ export function mentionsMe(body, chatId) {
   return (body.toLowerCase().match(MENTION_RE) || []).some(x => mine.has(x));
 }
 export { MENTION_RE };
+function isDnd() {
+  const p = state.profile;
+  return p?.status_key === 'dnd' && (!p.status_until || new Date(p.status_until) > new Date());
+}
 
 async function loadRoleNames() {
   const ids = [...new Set(items.map(c => c.my_role_id).filter(Boolean))];
@@ -77,6 +81,7 @@ function listenInbox() {
     if (m.sender_id === state.me?.id) return;
     refreshSoon();
     const looking = m.chat_id === activeId && !document.hidden;
+    if (isDnd()) return;
     const mention = mentionsMe(m.body, m.chat_id);
     if (mention && !looking) { const set = readMentions(); set.add(m.chat_id); writeMentions(set); render(); }
     if (!looking && (mention || !isMuted(m.chat_id))) beep();

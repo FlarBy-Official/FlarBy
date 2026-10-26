@@ -65,6 +65,7 @@ export function openSettings() {
       try {
         await call('set_my_status', { p_key: key, p_until: until });
         if (state.pub) state.pub.status = key;
+        if (state.profile) { state.profile.status_key = key; state.profile.status_until = until; }
         toast('Gespeichert');
       } catch (e) { toast(e.message); }
     } }, 'Speichern')));

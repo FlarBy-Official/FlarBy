@@ -76,7 +76,7 @@ async function handleMessage(db: DB, messageId: string) {
   const ids = recipients.map((r) => r.user_id);
 
   const [{ data: profs }, { data: prefs }, { data: muted }, { data: subRows }, { data: roles }] = await Promise.all([
-    db.from("profiles").select("id,username,banned,last_seen").in("id", ids),
+    db.from("profiles").select("id,username,banned,last_seen,status_key,status_until").in("id", ids),
     db.from("push_prefs").select("user_id,show_text").in("user_id", ids),
     db.from("push_muted_chats").select("user_id").eq("chat_id", msg.chat_id).in("user_id", ids),
     db.from("push_subscriptions").select("user_id").in("user_id", ids),
@@ -98,8 +98,10 @@ async function handleMessage(db: DB, messageId: string) {
   let sent = 0;
   for (const r of recipients) {
     if (!hasSub.has(r.user_id)) continue;
-    const p = profBy.get(r.user_id) as { username: string; banned: boolean; last_seen: string | null } | undefined;
+    const p = profBy.get(r.user_id) as { username: string; banned: boolean; last_seen: string | null; status_key: string | null; status_until: string | null } | undefined;
     if (!p || p.banned || recentlyActive(p.last_seen)) continue;
+    // "Bitte nicht stören": gar keine Mitteilung, auch nicht bei @Erwähnung
+    if (p.status_key === "dnd" && (!p.status_until || new Date(p.status_until) > new Date())) continue;
     if (mutedSet.has(r.user_id)) {
       const mine = new Set(["@everyone", "@" + p.username.toLowerCase()]);
       const rn = r.role_id ? roleName.get(r.role_id) : null;

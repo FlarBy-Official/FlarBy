@@ -4,7 +4,9 @@ create extension if not exists fuzzystrmatch with schema extensions;
 -- Kleinschreiben, ä→a, ö→o, ü→u, ß→ss, Zahlentricks (0→o, 1→i, 3→e, 4→a, 5→s, 7→t, @→a, $→s)
 create or replace function public._norm_text(p_text text)
 returns text language sql immutable set search_path = public, extensions as $$
-  select translate(replace(lower(coalesce(p_text, '')), 'ß', 'ss'), 'äöü0134@5$7', 'aouoieaasst');
+  select translate(replace(
+    regexp_replace(regexp_replace(lower(coalesce(p_text, '')), '!(?=[[:alnum:]])', 'i', 'g'), '\?(?=[[:alnum:]])', 's', 'g'),
+    'ß', 'ss'), 'äöü0134@5$7', 'aouoieaasst');
 $$;
 
 create or replace function public._check_banned_words()

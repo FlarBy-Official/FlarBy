@@ -144,3 +144,11 @@ export function richNodes(text, { mine, onMention } = {}) {
   };
   return render(0, toks.length).map(n => typeof n === 'string' ? document.createTextNode(n) : n);
 }
+
+export const STATUS = {
+  online: '🟢 Online',
+  sleep: '🌙 Schlafe',
+  dnd: '🚫 Bitte nicht stören',
+  school: '🏫 In der Schule',
+};
+export function statusLabel(key) { return Object.hasOwn(STATUS, key) ? STATUS[key] : ''; }

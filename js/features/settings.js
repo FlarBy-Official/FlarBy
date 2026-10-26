@@ -108,5 +108,35 @@ export function openSettings() {
   } }, 'Passwort ändern'))));
 
 
+  // Mitteilungen
+  const pushBox = el('div', {}, el('span', { class: 'muted small' }, 'Lade …'));
+  root.append(section('Mitteilungen', pushBox));
+  renderPushSection(pushBox);
+
   root.append(el('button', { class: 'btn block', onclick: async () => { closeModal(); await sb.auth.signOut(); } }, 'Abmelden'));
+}
+
+async function renderPushSection(box) {
+  const { pushStatus, enablePush, disablePush } = await import('./push.js');
+  const draw = async () => {
+    const st = await pushStatus();
+    const nodes = [];
+    if (st.state === 'on' || st.state === 'off') {
+      nodes.push(toggle('Mitteilungen auf diesem Gerät', st.state === 'on', async (v, cb) => {
+        try { if (v) await enablePush(); else await disablePush(); toast('Gespeichert'); }
+        catch (e) { cb.checked = !v; toast(e.message); }
+        draw();
+      }));
+      let showText = false;
+      try { const r = await call('get_push_prefs'); showText = !!(Array.isArray(r) ? r[0] : r)?.show_text; } catch { /* Standard AUS */ }
+      nodes.push(toggle('Text in Mitteilung zeigen', showText, async (v, cb) => {
+        try { await call('set_push_show_text', { p_value: v }); toast('Gespeichert'); }
+        catch (e) { cb.checked = !v; toast(e.message); }
+      }), el('div', { class: 'muted small' }, 'Aus: Du siehst nur, wer geschrieben hat. An: Du siehst auch den Text.'));
+    } else {
+      nodes.push(el('p', { class: 'muted small' }, st.hint));
+    }
+    box.replaceChildren(...nodes);
+  };
+  draw();
 }

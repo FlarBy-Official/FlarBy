@@ -71,12 +71,12 @@ js/features/roles.js      (D)  export openRoles(chatId)     – eigene Rollen an
 js/features/invite.js     (D)  export openInvite(chatId) (Code+QR erzeugen, Liste, widerrufen, reaktivieren, Direkteinladung per Benutzername) · export openJoin() (Code eintippen oder QR scannen via BarcodeDetector, Fallback jsQR per CDN)
 js/features/team.js       (D)  export openTeamPanel()       – je nach globaler Rolle: Meldungen (Kontext, löschen, verwarnen, stumm), Tickets (Passwort-Reset), Nutzerliste (Rolle, Badge, Sperre), Registrier-Codes
 js/features/report.js     (D)  export openReport(messageId)
-js/features/settings.js   (C)  export openSettings() – Profil, Team-Tag/Badge an/aus, App-PIN, Hinweis „Betreiber kann mitlesen“, Passwort ändern, Dark Mode, Abmelden
+js/features/settings.js   (C)  export openSettings() – Profil, Team-Tag/Badge an/aus, App-PIN, Passwort ändern, Dark Mode, Abmelden
 ```
 C ruft D-Module per dynamischem `import()` auf, nur über die Exporte oben. D ruft nur `core.js`-Helfer und Supabase-RPC. Texte immer Deutsch, kein Inline-`innerHTML` mit Nutzerdaten ohne `esc()`.
 
-### Hinweistext bei Registrierung (C, groß, schwarz, gut lesbar, ohne Häkchen)
-„Hinweis: Der Betreiber von FlarChat ist Cool“ – zusätzlich in Einstellungen.
+### Registrierung (C)
+Pflicht-Haken „Ich habe die AGB gelesen“ mit Link zu `agb.html`.
 
 ### Sicherheit (alle)
 Keine Secrets im Repo. Nur `anon`-Key im Frontend. RLS überall aktiv; sensible Tabellen ohne Policies. Admin-PIN nie im Code.

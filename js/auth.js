@@ -1,7 +1,6 @@
 import { sb, el, call, toast } from './core.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-const NOTICE = 'Hinweis: Der Betreiber von FlarChat ist Cool';
 const USER_RE = /^[a-z0-9_]{3,20}$/;
 
 export const toEmail = u => `${u.trim().toLowerCase()}@flarchat.local`;
@@ -97,7 +96,7 @@ export function renderAuth(root, { onLogin, notice } = {}) {
     const form = el('form', {}, u.node, p.node,
       el('label', { style: 'display:flex;align-items:flex-start;gap:8px;margin:10px 0;cursor:pointer' }, agb,
         el('span', {}, 'Ich habe die ', el('a', { href: 'agb.html', target: '_blank', rel: 'noopener' }, 'AGB'), ' gelesen und stimme zu.')),
-      el('div', { class: 'notice-big' }, NOTICE), err, btn);
+      err, btn);
     form.addEventListener('submit', e => {
       e.preventDefault();
       busy(btn, async () => {

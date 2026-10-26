@@ -107,8 +107,6 @@ export function openSettings() {
     np.value = ''; toast('Passwort geändert');
   } }, 'Passwort ändern'))));
 
-  root.append(section('Hinweis', el('div', { class: 'notice-big' },
-    'Hinweis: Der Betreiber von FlarChat ist Cool')));
 
   root.append(el('button', { class: 'btn block', onclick: async () => { closeModal(); await sb.auth.signOut(); } }, 'Abmelden'));
 }

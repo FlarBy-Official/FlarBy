@@ -56,7 +56,7 @@ export async function codesView(view) {
     }) }, '🗑'));
     return d;
   });
-  view.replaceChildren(el('div', { class: 'row' }, newBtn), rows.length ? list : el('p', { class: 'muted' }, 'Keine Codes.'));
+  view.replaceChildren(el('div', { class: 'row' }, newBtn), ...(rows.length ? list : [el('p', { class: 'muted' }, 'Keine Codes.')]));
 }
 
 export async function announceView(view) {
@@ -83,7 +83,7 @@ export async function wordsView(view) {
   view.replaceChildren(
     el('p', { class: 'muted small' }, 'Nachrichten mit diesen Wörtern werden nicht gesendet (der Owner darf alles).'),
     el('div', { class: 'row' }, input, el('button', { class: 'btn small', onclick: add }, 'Hinzufügen')),
-    words.length ? words.map(w => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, w),
+    ...(words.length ? words.map(w => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, w),
       el('button', { class: 'btn ghost small', onclick: async () => { try { await call('admin_remove_word', { p_word: w }); reload(); } catch (e) { toast(e.message); } } }, 'Entfernen')))
-      : el('p', { class: 'muted' }, 'Noch keine Wörter.'));
+      : [el('p', { class: 'muted' }, 'Noch keine Wörter.')]));
 }

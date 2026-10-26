@@ -5,6 +5,10 @@
 - Keine schweren Wörter. Wenn ein schweres Wort nötig ist, erkläre es in einem Satz.
 - Sage immer, was du gemacht hast und was er jetzt tun muss.
 
+## Am Anfang und am Ende
+- Am Anfang eines neuen Chats: Lies sofort die Datei `README.md`.
+- Wenn eine Aufgabe fertig ist: Pushe direkt (`git add -A`, `git commit`, `git push`).
+
 ## Wichtige Daten
 - Code-Seite (GitHub): https://github.com/FlarBy-Official/FlarBy (Konto `FlarBy-Official`, Zweig `main`)
 - Die fertige App: https://flarby-official.github.io/FlarBy/

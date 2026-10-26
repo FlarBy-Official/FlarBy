@@ -1,12 +1,20 @@
 -- 025: Wörter-Filter strenger: Umlaute/Zahlen-Tricks, Leerzeichen zwischen Buchstaben und 80 % Ähnlichkeit. Idempotent.
 create extension if not exists fuzzystrmatch with schema extensions;
 
--- Kleinschreiben, ä→a, ö→o, ü→u, ß→ss, Zahlentricks (0→o, 1→i, 3→e, 4→a, 5→s, 7→t, @→a, $→s)
+-- Macht Text vergleichbar: Kleinschreibung, unsichtbare Zeichen weg, Akzente weg, ä→a, ß→ss,
+-- Zeichentricks (0→o, 1/l/!/|→i, 3/€→e, 4/@→a, 5/$/?→s, 7→t, 8→b, 9/6→g, 2→z, +→t) und doppelte Buchstaben → ein Buchstabe.
+-- Wörter und Nachrichten werden gleich umgewandelt, darum passt der Vergleich.
 create or replace function public._norm_text(p_text text)
 returns text language sql immutable set search_path = public, extensions as $$
-  select translate(replace(
-    regexp_replace(regexp_replace(lower(coalesce(p_text, '')), '!(?=[[:alnum:]])', 'i', 'g'), '\?(?=[[:alnum:]])', 's', 'g'),
-    'ß', 'ss'), 'äöü0134@5$7', 'aouoieaasst');
+  select regexp_replace(
+    translate(replace(
+      regexp_replace(regexp_replace(
+        regexp_replace(lower(coalesce(p_text, '')), '[\u200B-\u200F\u2060\uFEFF\u00AD]', '', 'g'),
+        '!(?=[[:alnum:]])', 'i', 'g'), '\?(?=[[:alnum:]])', 's', 'g'),
+      'ß', 'ss'),
+      'äöü0134@5$7l' || '8962|+€' || 'áàâãåéèêëíìîïóòôõúùûñçý',
+      'aouoieaassti' || 'bggzite' || 'aaaaaeeeeiiiioooouuuncy'),
+    '([a-z])\1+', '\1', 'g');
 $$;
 
 create or replace function public._check_banned_words()

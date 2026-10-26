@@ -102,6 +102,7 @@ function buildMain() {
   const ping = () => call('touch_presence').catch(() => { });
   ping();
   presenceTimer = setInterval(ping, 60000);
+  import('./features/reminders.js').then(m => m.startReminders()).catch(() => { });
 }
 
 // Große Knöpfe für Team und Owner, ganz oben in der Seitenleiste

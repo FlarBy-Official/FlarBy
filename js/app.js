@@ -60,6 +60,7 @@ async function start() {
   }
   buildMain();
   showAvatarNotice();
+  showAnnouncement();
   window.addEventListener('flarchat:avatar-changed', () => refreshChatList());
 }
 
@@ -207,5 +208,16 @@ async function showAvatarNotice() {
       st.locked ? el('p', { class: 'muted' }, 'Du kannst im Moment kein Avatar mehr einstellen.') : '',
       el('div', { class: 'row end' }, el('button', { class: 'btn', onclick: () => m.close() }, 'Verstanden'))));
     await call('clear_avatar_notice');
+  } catch { /* nicht schlimm */ }
+}
+
+async function showAnnouncement() {
+  try {
+    const { data } = await sb.from('app_settings').select('value').eq('key', 'announcement').maybeSingle();
+    const a = data?.value;
+    if (!a?.text || localStorage.getItem('flarchat-announce') === a.id) return;
+    const m = openModal('📢 Ansage', el('div', {},
+      el('p', {}, a.text),
+      el('div', { class: 'row end' }, el('button', { class: 'btn', onclick: () => { localStorage.setItem('flarchat-announce', a.id); m.close(); } }, 'Verstanden'))));
   } catch { /* nicht schlimm */ }
 }

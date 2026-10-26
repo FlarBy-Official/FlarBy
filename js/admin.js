@@ -1,4 +1,4 @@
-import { sb, state, el, esc, toast, call, nameHtml } from './core.js';
+import { sb, state, el, esc, toast, call, nameHtml, confirmDialog } from './core.js';
 import { signedUrl } from './media.js';
 
 let root = document.getElementById('admin-root');
@@ -47,26 +47,57 @@ function mainScreen() {
   screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
-    tabs.replaceChildren(...[['chats', 'Chats'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
+    tabs.replaceChildren(...[['stats', 'Statistik'], ['chats', 'Chats'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['announce', 'Ansage'], ['words', 'Wörter'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
       if (id === 'chats') return chatsView(view);
+      if (['stats', 'activity', 'codes', 'announce', 'words'].includes(id)) {
+        const x = await import('./features/adminExtra.js');
+        return ({ stats: x.statsView, activity: x.activityView, codes: x.codesView, announce: x.announceView, words: x.wordsView })[id](view);
+      }
       if (id === 'audit') return auditView(view);
       const t = await import('./features/team.js');
       return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers, errors: t.tabErrors })[id](view);
     };
     load().catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
   };
-  show('chats');
+  show('stats');
 }
 
 async function chatsView(view) {
   const chats = (await call('admin_list_chats')) || [];
-  const list = el('div', { class: 'admin-chats' }, chats.length ? chats.map(c =>
+  const title = c => c.name || `Direktchat ${String(c.id).slice(0, 8)}`;
+  const list = el('div', { class: 'admin-chats' });
+  const draw = q => list.replaceChildren(...(chats.filter(c => !q || `${title(c)} ${c.members || ''}`.toLowerCase().includes(q)).map(c =>
     el('button', { class: 'list-row link', onclick: () => readChat(view, c, () => chatsView(view).catch(e => toast(e.message))) },
-      el('span', { class: 'grow' }, c.name || `Direktchat ${String(c.id).slice(0, 8)}`),
-      el('span', { class: 'muted small' }, c.type === 'group' ? 'Gruppe' : 'Direkt'))) : el('p', { class: 'muted' }, 'Keine Chats.'));
-  view.replaceChildren(list);
+      el('span', { class: 'grow' }, title(c), el('span', { class: 'muted small' }, c.members ? ' · ' + c.members : '')),
+      el('span', { class: 'muted small' }, c.type === 'group' ? 'Gruppe' : 'Direkt')))));
+  draw('');
+  const i = el('input', { type: 'search', placeholder: 'Chat oder Nutzer suchen …', style: 'width:100%;margin:6px 0' });
+  i.addEventListener('input', () => draw(i.value.trim().toLowerCase()));
+  view.replaceChildren(i, chats.length ? list : el('p', { class: 'muted' }, 'Keine Chats.'));
+}
+
+async function exportChat(chat) {
+  const all = [];
+  let before = new Date().toISOString();
+  for (;;) {
+    const page = (await call('admin_chat_messages', { p_chat_id: chat.id, p_before: before, p_limit: 500 })) || [];
+    all.push(...page);
+    if (page.length < 500) break;
+    before = page[page.length - 1].created_at;
+  }
+  all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  const text = all.map(m => `[${fmt(m.created_at)}] ${m.sender_username || m.sender_id}: ${m.body || ''}${m.media_path ? ' [Bild]' : ''}${m.deleted_at ? ' (gelöscht)' : ''}`).join('\n');
+  const a = el('a', { href: URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })), download: `chat-${String(chat.name || chat.id).replace(/[^\w-]+/g, '_')}.txt` });
+  document.body.append(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
+async function deleteChat(chat) {
+  const paths = (await call('admin_chat_media', { p_chat_id: chat.id })) || [];
+  await call('admin_delete_chat', { p_chat_id: chat.id });
+  for (let i = 0; i < paths.length; i += 100) await sb.storage.from('media').remove(paths.slice(i, i + 100));
 }
 
 async function readChat(view, chat, back) {
@@ -99,7 +130,13 @@ async function readChat(view, chat, back) {
         }).catch(e => fail(e.message || 'unbekannt'));
       }
     }
-    view.replaceChildren(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: back }, '← Zurück'), el('strong', {}, chat.name || 'Direktchat')),
+    const tools = el('div', { class: 'row wrap' },
+      el('button', { class: 'btn ghost small', onclick: async () => { try { await exportChat(chat); toast('Datei gespeichert.'); } catch (e) { toast(e.message); } } }, '💾 Exportieren'),
+      el('button', { class: 'btn danger small', onclick: async () => {
+        if (!await confirmDialog('Diesen Chat mit allen Nachrichten und Bildern für immer löschen?', 'Löschen')) return;
+        try { await deleteChat(chat); toast('Chat gelöscht.'); back(); } catch (e) { toast(e.message); }
+      } }, '🗑 Chat löschen'));
+    view.replaceChildren(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: back }, '← Zurück'), el('strong', {}, chat.name || 'Direktchat')), tools,
       msgs.length ? list : el('p', { class: 'muted' }, 'Keine Nachrichten.'));
   } catch (e) {
     toast(e.message); back();

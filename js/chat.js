@@ -499,6 +499,10 @@ export async function openChat(chatId) {
   }
 
   function bubble(m) {
+    if (m.is_system) {
+      return el('div', { class: 'sys-msg', 'data-id': m.id },
+        el('div', { class: 'sys-label' }, 'SYSTEM'), el('div', { class: 'sys-body' }, m.body));
+    }
     const mine = m.sender_id === state.me.id;
     const node = el('div', { class: 'msg' + (mine ? ' me' : '') + (m.deleted_at ? ' deleted' : ''), 'data-id': m.id });
     if (!mine && c.meta.type === 'group') {
@@ -587,6 +591,7 @@ export async function openChat(chatId) {
     if (!c.oldestReached && c.msgs.length) nodes.push(el('button', { class: 'btn ghost load-more', onclick: () => c.loadOlder() }, 'Ältere Nachrichten laden'));
     let day = '';
     for (const m of c.msgs) {
+      if (m.is_system && m.deleted_at) continue;
       const d = new Date(m.created_at).toDateString();
       if (d !== day) { day = d; nodes.push(el('div', { class: 'day-sep' }, dayLabel(m.created_at))); }
       nodes.push(bubble(m));

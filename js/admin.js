@@ -78,6 +78,16 @@ async function chatsView(view) {
   view.replaceChildren(i, chats.length ? list : el('p', { class: 'muted' }, 'Keine Chats.'));
 }
 
+function systemComposer(view, chat, back) {
+  const ta = el('textarea', { rows: '2', maxlength: '500', placeholder: 'Systemnachricht schreiben …', style: 'width:100%' });
+  const send = el('button', { class: 'btn', onclick: async () => {
+    if (!ta.value.trim()) return;
+    send.disabled = true;
+    try { await call('admin_send_system_message', { p_chat_id: chat.id, p_body: ta.value }); toast('Systemnachricht gesendet.'); readChat(view, chat, back); } catch (e) { toast(e.message); send.disabled = false; }
+  } }, '📢 Als SYSTEM senden');
+  return el('div', { class: 'admin-msg' }, el('strong', {}, 'Systemnachricht an alle in diesem Chat'), ta, el('div', { class: 'row end' }, send));
+}
+
 async function exportChat(chat) {
   const all = [];
   let before = new Date().toISOString();
@@ -111,9 +121,13 @@ async function readChat(view, chat, back) {
     for (const m of msgs) {
       const d = el('div', { class: 'admin-msg' + (m.deleted_at ? ' deleted' : '') });
       const edits = Array.isArray(m.edits) ? m.edits : [];
-      d.innerHTML = `<div class="small">${nameHtml(pm[m.sender_id]) || esc(m.sender_id)} <span class="muted">${esc(fmt(m.created_at))}</span>${m.deleted_at ? ' <span class="status status-widerrufen">gelöscht ' + esc(fmt(m.deleted_at)) + '</span>' : ''}${edits.length ? ' <span class="status status-abgelaufen">bearbeitet</span>' : ''}</div>
+      d.innerHTML = `<div class="small">${nameHtml(pm[m.sender_id]) || esc(m.sender_id)} <span class="muted">${esc(fmt(m.created_at))}</span>${m.deleted_at ? ' <span class="status status-widerrufen">gelöscht ' + esc(fmt(m.deleted_at)) + '</span>' : ''}${edits.length ? ' <span class="status status-abgelaufen">bearbeitet</span>' : ''}${m.is_system ? ' <span class="status status-aktiv">SYSTEM</span>' : ''}</div>
         <div>${esc(m.body || '')}${m.media_path ? ' <span class="muted media-note">🖼 Bild wird geladen …</span>' : ''}</div>
         ${edits.length ? '<ul class="edits">' + edits.map(e => `<li><span class="muted small">${esc(fmt(e.edited_at))}:</span> ${esc(e.old_body)}</li>`).join('') + '</ul>' : ''}`;
+      if (m.is_system && !m.deleted_at) d.append(el('button', { class: 'btn ghost small', onclick: async () => {
+        if (!await confirmDialog('Systemnachricht löschen?', 'Löschen')) return;
+        try { await call('admin_delete_system_message', { p_message_id: m.id }); toast('Gelöscht.'); readChat(view, chat, back); } catch (e) { toast(e.message); }
+      } }, '🗑 Löschen'));
       if (!m.deleted_at) d.append(el('button', { class: 'btn ghost small', onclick: async () => {
         try { await call('pin_message', { p_chat_id: chat.id, p_message_id: m.id }); toast('Nachricht angepinnt.'); } catch (e) { toast(e.message); }
       } }, '📌 Anpinnen'));
@@ -137,7 +151,7 @@ async function readChat(view, chat, back) {
         try { await deleteChat(chat); toast('Chat gelöscht.'); back(); } catch (e) { toast(e.message); }
       } }, '🗑 Chat löschen'));
     view.replaceChildren(el('div', { class: 'row' }, el('button', { class: 'btn ghost small', onclick: back }, '← Zurück'), el('strong', {}, chat.name || 'Direktchat')), tools,
-      msgs.length ? list : el('p', { class: 'muted' }, 'Keine Nachrichten.'));
+      msgs.length ? list : el('p', { class: 'muted' }, 'Keine Nachrichten.'), systemComposer(view, chat, back));
   } catch (e) {
     toast(e.message); back();
   }

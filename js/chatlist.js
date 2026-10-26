@@ -147,7 +147,7 @@ function render() {
     const mentioned = readMentions().has(c.chat_id);
     const last = c.last_message_body === '' || c.last_message_body == null
       ? (c.last_message_at ? '📎 Anhang' : '') : c.last_message_body;
-    const prefix = c.type === 'group' && c.last_message_sender && c.last_message_sender === state.me?.id ? 'Du: ' : '';
+    const prefix = c.last_message_is_system ? 'SYSTEM: ' : c.type === 'group' && c.last_message_sender && c.last_message_sender === state.me?.id ? 'Du: ' : '';
     return el('div', { class: 'chat-item' + (c.chat_id === activeId ? ' active' : ''), onclick: () => { location.hash = '#/chat/' + c.chat_id; } },
       avatarEl({ url: c.avatar_url, name: t.text, seed: c.peer_user_id || c.chat_id }),
       el('div', { class: 'chat-main' },

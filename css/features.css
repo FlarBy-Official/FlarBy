@@ -130,3 +130,7 @@ h4{margin:16px 0 6px}
 .reminder-banner{background:#fff8d6;color:#222;border:2px solid #e0b400;border-radius:10px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .reminder-banner .reminder-text{margin-bottom:8px;word-break:break-word}
 .remind-opts{display:flex;flex-direction:column;gap:8px}
+.voice-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid var(--border,#eee)}
+.voice-bar audio{flex:1;min-width:160px;max-width:100%}
+.voice-time{font-variant-numeric:tabular-nums;font-weight:600}
+.voice-audio{display:block;max-width:100%;width:240px;margin-top:4px}

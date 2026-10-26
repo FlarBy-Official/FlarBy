@@ -49,6 +49,13 @@ async function attachmentImg(path) {
   return el('img', { src: data.signedUrl, alt: 'Anhang', style: 'max-width:100%;max-height:260px;border-radius:8px' });
 }
 
+async function mediaNode(path) {
+  const { data, error } = await sb.storage.from('media').createSignedUrl(path, 600);
+  if (error) return el('p', { class: 'error small' }, 'Anhang nicht ladbar: ' + error.message);
+  if (/\.(webm|m4a|mp4|ogg)$/i.test(path)) return el('audio', { src: data.signedUrl, controls: '', style: 'max-width:100%;margin-top:4px' });
+  return el('img', { src: data.signedUrl, alt: 'Bild', style: 'max-width:100%;max-height:200px;border-radius:8px;margin-top:4px' });
+}
+
 function avatarReportRow(a, reload) {
   const name = a.target_name || a.target_username || '?';
   const d = el('div', { class: 'list-row col' });
@@ -83,7 +90,7 @@ export async function tabReports(box) {
     const d = el('div', { class: 'list-row col' });
     d.innerHTML = `<div><strong>${esc(r.reason)}</strong> <span class="status status-${r.status === 'open' ? 'aktiv' : 'verwendet'}">${r.status === 'open' ? 'offen' : 'erledigt'}</span></div>
       <div class="muted small">von ${nameHtml(pm[r.reporter_id])} · ${esc(fmtTime(r.created_at))}</div>
-      <div class="small" style="margin-top:4px">Nachricht von @${esc(r.message_sender_username || '?')}: ${r.message_deleted ? '<em class="muted">gelöscht</em> ' : ''}${esc(r.message_body || '[Bild]')}</div>`;
+      <div class="small" style="margin-top:4px">Nachricht von @${esc(r.message_sender_username || '?')}: ${r.message_deleted ? '<em class="muted">gelöscht</em> ' : ''}${esc(r.message_body || '[Anhang]')}</div>`;
     d.append(el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => reportDetail(r, () => tabReports(box)) }, 'Ansehen')));
     return d;
   }));
@@ -97,7 +104,8 @@ async function reportDetail(r, reload) {
   for (const msg of ctx) {
     const d = el('div', { class: 'ctx-msg' + (msg.id === r.message_id ? ' flagged' : '') });
     d.innerHTML = `<div class="small">${nameHtml(pm[msg.sender_id])} <span class="muted">${esc(fmtTime(msg.created_at))}</span></div>
-      <div>${msg.deleted_at ? '<em class="muted">gelöscht</em>' : esc(msg.body || (msg.media_path ? '[Bild]' : ''))}</div>`;
+      <div>${msg.deleted_at ? '<em class="muted">gelöscht</em>' : esc(msg.body || '')}</div>`;
+    if (msg.media_path) mediaNode(msg.media_path).then(n => d.append(n));
     list.append(d);
   }
   const target = ctx.find(x => x.id === r.message_id);

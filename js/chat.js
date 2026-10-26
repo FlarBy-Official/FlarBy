@@ -1,6 +1,7 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel } from './core.js';
 import { openMention } from './features/mentions.js';
 import { uploadImage, signedUrl } from './media.js';
+import { createVoiceRecorder, uploadVoice, isVoicePath, voicePlayer } from './features/voice.js';
 import { fillAvatar, avatarEl } from './avatar.js';
 import { refreshSoon, initial, isMuted, toggleMute, myMentionTokens } from './chatlist.js';
 
@@ -50,6 +51,7 @@ function teardown() {
 function dayLabel(iso) {
   return new Date(iso).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 }
+function mediaLabel(m) { return isVoicePath(m.media_path) ? '🎤 Sprachnachricht' : '📷 Bild'; }
 function clock(iso) { return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }
 
 export async function openChat(chatId) {
@@ -92,9 +94,11 @@ export async function openChat(chatId) {
   const file = el('input', { type: 'file', accept: 'image/*', class: 'hidden' });
   const sendBtn = el('button', { class: 'icon-btn send', 'aria-label': 'Senden' }, '➤');
   const mentionBox = el('div', { class: 'mention-box hidden' });
-  const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar,
+  const voice = createVoiceRecorder(async blob => { await insertMessage({ body: '', media_path: await uploadVoice(chatId, blob) }); });
+  const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar, voice.bar,
     el('div', { class: 'composer' },
       el('button', { class: 'icon-btn', 'aria-label': 'Bild senden', onclick: () => file.click() }, '📎'),
+      voice.btn,
       el('button', { class: 'icon-btn', 'aria-label': 'Umfrage erstellen', onclick: () => openPollForm() }, '📊'),
       file, ta, sendBtn));
   const pinBar = el('div', { class: 'pin-bar hidden' });
@@ -183,7 +187,7 @@ export async function openChat(chatId) {
     if (!kind) { ctxBar.classList.add('hidden'); ctxBar.replaceChildren(); return; }
     ctxBar.classList.remove('hidden');
     ctxBar.replaceChildren(
-      el('div', { class: 'txt' }, (kind === 'edit' ? '✎ Bearbeiten: ' : '↩ Antwort: '), m.body ? richNodes(m.body) : '📷 Bild'),
+      el('div', { class: 'txt' }, (kind === 'edit' ? '✎ Bearbeiten: ' : '↩ Antwort: '), m.body ? richNodes(m.body) : mediaLabel(m)),
       el('button', { class: 'icon-btn', onclick: () => { setContext(null, null); if (kind === 'edit') ta.value = ''; } }, '✕'));
     if (kind === 'edit') ta.value = m.body;
     ta.focus();
@@ -306,7 +310,7 @@ export async function openChat(chatId) {
     if (!m || m.deleted_at) { c.pinBar.classList.add('hidden'); return; }
     c.pinBar.classList.remove('hidden');
     c.pinBar.replaceChildren(
-      el('div', { class: 'txt', onclick: () => jumpTo(m.id) }, '📌 ', m.body ? richNodes(m.body, { onMention: t => openMention(t, chatId) }) : '📷 Bild'),
+      el('div', { class: 'txt', onclick: () => jumpTo(m.id) }, '📌 ', m.body ? richNodes(m.body, { onMention: t => openMention(t, chatId) }) : mediaLabel(m)),
       c.canPin ? el('button', { class: 'icon-btn', 'aria-label': 'Pin lösen', onclick: () => pinMessage(null) }, '✕') : null);
   }
 
@@ -508,13 +512,15 @@ export async function openChat(chatId) {
       const q = el('div', { class: 'quote', onclick: () => jumpTo(m.reply_to) });
       const qn = el('div', { class: 'qn' });
       qn.innerHTML = r ? nameHtml(profCache.get(r.sender_id)) : '';
-      q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body, { onMention: t => openMention(t, chatId) }) : '📷 Bild'));
+      q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body, { onMention: t => openMention(t, chatId) }) : mediaLabel(r)));
       node.append(q);
     }
     if (m.deleted_at) {
       node.append(el('div', { class: 'body' }, 'Diese Nachricht wurde gelöscht'));
     } else {
-      if (m.media_path) {
+      if (m.media_path && isVoicePath(m.media_path)) {
+        node.append(voicePlayer(m.media_path, signedUrl));
+      } else if (m.media_path) {
         const img = el('img', { class: 'pic', alt: 'Bild', loading: 'lazy' });
         signedUrl(m.media_path).then(u => { img.src = u; img.onclick = () => openModal('Bild', el('img', { src: u, style: 'max-width:100%;border-radius:6px' }), { wide: true }); })
           .catch(() => { img.alt = 'Bild nicht ladbar'; });

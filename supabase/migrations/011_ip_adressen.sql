@@ -33,8 +33,7 @@ create or replace function public.list_user_ips(p_user_id uuid)
 returns table (ip text, first_seen timestamptz, last_seen timestamptz)
 language plpgsql stable security definer set search_path = public, extensions as $$
 declare
-  v_uid uuid := public._need_rank(2, 'Hallo!' ||
-  );
+  v_uid uuid := public._need_rank(2, 'Nur Admins dürfen IP-Adressen sehen.');
 begin
   return query select l.ip, l.first_seen, l.last_seen from public.login_ips l
     where l.user_id = p_user_id order by l.last_seen desc limit 20;

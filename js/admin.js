@@ -47,13 +47,13 @@ function mainScreen() {
   screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
-    tabs.replaceChildren(...[['chats', 'Chats'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
+    tabs.replaceChildren(...[['chats', 'Chats'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
       if (id === 'chats') return chatsView(view);
       if (id === 'audit') return auditView(view);
       const t = await import('./features/team.js');
-      return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers })[id](view);
+      return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers, errors: t.tabErrors })[id](view);
     };
     load().catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
   };

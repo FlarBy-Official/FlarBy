@@ -46,7 +46,7 @@ export function openSettings() {
       toast('Gespeichert');
     } }, 'Speichern'),
     prev,
-    el('div', { class: 'muted small', style: 'margin-top:8px' }, 'Hallo!')));
+    el('div', { class: 'muted small', style: 'margin-top:8px' }, 'Zur Sicherheit speichert die App: deine IP-Adresse, den ungefähren Ort, dein Gerät und deinen Browser, Sprache, Zeitzone, Bildschirmgröße, wann du dich anmeldest, und Fehler der App. Das sehen nur Admins.')));
 
   // Profilbild
   const avBox = el('div', {}, el('span', { class: 'muted small' }, 'Lade …'));

@@ -86,7 +86,19 @@ function buildMain() {
     async () => { await loadProfile(state.me); refreshName(); });
   appChannel.subscribe();
 
-  call('record_login_ip').catch(() => { });
+  const info = {
+    ua: navigator.userAgent, lang: navigator.language, tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    screen: `${screen.width}x${screen.height}`,
+    standalone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
+  };
+  call('record_login', { p_info: info }).catch(() => call('record_login_ip').catch(() => { }));
+  let errCount = 0;
+  const report = (message, stack) => {
+    if (errCount++ >= 5) return;
+    call('log_client_error', { p_message: String(message), p_stack: stack ? String(stack) : null, p_url: location.href, p_ua: navigator.userAgent }).catch(() => { });
+  };
+  window.addEventListener('error', e => report(e.message, e.error?.stack));
+  window.addEventListener('unhandledrejection', e => report(e.reason?.message || e.reason, e.reason?.stack));
   const ping = () => call('touch_presence').catch(() => { });
   ping();
   presenceTimer = setInterval(ping, 60000);

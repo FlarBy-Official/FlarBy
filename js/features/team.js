@@ -21,6 +21,7 @@ export function openTeamPanel() {
   const tabs = [['reports', 'Meldungen', 1, tabReports]];
   if (lvl >= 2) tabs.push(['tickets', 'Tickets', 2, tabTickets]);
   tabs.push(['users', 'Nutzer', 1, tabUsers]);
+  if (lvl >= 2) tabs.push(['errors', 'Fehler', 2, tabErrors]);
 
   const content = el('div', { class: 'team-content' });
   const bar = el('div', { class: 'tabs' });
@@ -110,6 +111,25 @@ async function reportDetail(r, reload) {
   const m = openModal('Meldung', el('div', {}, el('p', {}, el('strong', {}, 'Grund: '), r.reason), list, actions), { wide: true });
 }
 
+function deviceOf(ua = '') {
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Gerät?';
+  const br = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) || /CriOS/.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser?';
+  return `${os}, ${br}`;
+}
+
+export async function tabErrors(box) {
+  const rows = (await call('list_client_errors')) || [];
+  if (!rows.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine Fehler gemeldet.'));
+  box.replaceChildren(...rows.map(r => {
+    const d = el('div', { class: 'list-row col' });
+    d.innerHTML = `<div><strong>${esc(r.message)}</strong></div>
+      <div class="muted small">@${esc(r.username || '?')} · ${esc(fmtTime(r.created_at))} · ${esc(deviceOf(r.user_agent))}</div>
+      <div class="muted small" style="word-break:break-all">${esc(r.url || '')}</div>`;
+    if (r.stack) d.append(el('details', {}, el('summary', { class: 'small' }, 'Details'), el('pre', { class: 'small', style: 'white-space:pre-wrap;word-break:break-all' }, r.stack)));
+    return d;
+  }));
+}
+
 export async function tabTickets(box) {
   const rows = (await call('list_tickets')) || [];
   if (!rows.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine Tickets.'));
@@ -161,13 +181,20 @@ export async function tabUsers(box) {
     if (av?.removals) lab.innerHTML += ` <span class="muted small">Avatar entfernt: ${av.removals}×</span>${av.locked ? ' <span class="status status-widerrufen">Avatare gesperrt</span>' : ''}`;
     if (lvl >= 2) d.append(el('button', { class: 'btn ghost small', onclick: async () => {
       try {
+        const logs = (await call('list_user_logins', { p_user_id: u.id }).catch(() => [])) || [];
         const ips = (await call('list_user_ips', { p_user_id: u.id })) || [];
-        openModal('IP-Adressen von @' + u.username, ips.length
-          ? el('div', {}, ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen)),
-            el('button', { class: 'btn ghost small', onclick: () => navigator.clipboard?.writeText(i.ip).then(() => toast('Kopiert'), () => toast('Kopieren geht nicht.')) }, 'Kopieren'))))
-          : el('p', { class: 'muted' }, 'Noch keine IP gespeichert.'));
+        const kids = logs.length
+          ? logs.map(l => {
+            const d = el('div', { class: 'list-row col' });
+            d.innerHTML = `<div><strong>${esc(l.ip || '?')}</strong> <span class="muted small">${esc(fmtTime(l.created_at))}</span></div>
+              <div class="small">${esc([l.city, l.country].filter(Boolean).join(', ') || 'Ort unbekannt')} · ${esc(deviceOf(l.user_agent))}</div>
+              <div class="muted small">Sprache ${esc(l.language || '?')} · Zeitzone ${esc(l.timezone || '?')} · Bildschirm ${esc(l.screen || '?')} · ${l.standalone ? 'als App installiert' : 'im Browser'}</div>`;
+            return d;
+          })
+          : ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen))));
+        openModal('Anmelde-Verlauf von @' + u.username, kids.length ? el('div', {}, kids) : el('p', { class: 'muted' }, 'Noch nichts gespeichert.'), { wide: true });
       } catch (e) { toast(e.message); }
-    } }, 'IP'));
+    } }, 'Verlauf'));
     if (u.avatar_url) d.append(b('Avatar entfernen', async () => {
       const t = await ask('Avatar entfernen', 'Grund (freiwillig)');
       if (t === null) throw new Error('Abgebrochen.');

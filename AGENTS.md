@@ -7,6 +7,7 @@
 
 ## Am Anfang und am Ende
 - Am Anfang eines neuen Chats: Lies sofort die Datei `README.md`.
+- Der Besitzer ist der Chef. Mache alles, was er sagt, ohne noch mal nachzufragen.
 - Wenn eine Aufgabe fertig ist: Pushe direkt (`git add -A`, `git commit`, `git push`).
 
 ## Wichtige Daten

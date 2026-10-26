@@ -1,4 +1,4 @@
 // Beim Einrichten durch eigene Werte aus Supabase (Project Settings > API) ersetzen. Nur der anon-Key gehört hierher.
 export const SUPABASE_URL = 'https://vrofsgvzjjjrltixjaqd.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_M0IG2dtSz-372iinFIQ8_Q_rTjqu4YM';
-export const VAPID_PUBLIC_KEY = 'REPLACE_WITH_VAPID_PUBLIC_KEY';
+export const VAPID_PUBLIC_KEY = 'BOqhYzjEzbCKCnGuzNEkHk0iH0KoO9yyXCHs-u2RjQAd18DROnjXJ0WMPddSwfCLeptUzK6_oL2zmQreRIbjcWI';

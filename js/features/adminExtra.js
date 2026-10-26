@@ -81,7 +81,7 @@ export async function wordsView(view) {
   };
   input.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
   view.replaceChildren(
-    el('p', { class: 'muted small' }, 'Nachrichten mit diesen Wörtern werden nicht gesendet (der Owner darf alles).'),
+    el('p', { class: 'muted small' }, 'Nachrichten mit diesen Wörtern werden nicht gesendet. Das gilt auch für Wörter mit mindestens 80 % Ähnlichkeit, für Zahlentricks (z. B. 4 statt a) und für die Buchstaben mit Leerzeichen dazwischen. Der Owner darf alles.'),
     el('div', { class: 'row' }, input, el('button', { class: 'btn small', onclick: add }, 'Hinzufügen')),
     ...(words.length ? words.map(w => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, w),
       el('button', { class: 'btn ghost small', onclick: async () => { try { await call('admin_remove_word', { p_word: w }); reload(); } catch (e) { toast(e.message); } } }, 'Entfernen')))

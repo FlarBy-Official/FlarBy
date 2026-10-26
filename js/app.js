@@ -53,9 +53,46 @@ async function start() {
     await forcePasswordChange(app);
     prof.must_change_password = false;
   }
+  if (prof && 'agb_accepted_at' in prof && !prof.agb_accepted_at) {
+    const ok = await askAgb();
+    if (!ok) { enteredFor = null; await sb.auth.signOut(); return showAuth(); }
+    prof.agb_accepted_at = new Date().toISOString();
+  }
   buildMain();
   showAvatarNotice();
   window.addEventListener('flarchat:avatar-changed', () => refreshChatList());
+}
+
+// Blockierendes Fenster; true = zugestimmt (oder Datenbank kennt accept_agb noch nicht), false = abgemeldet
+function askAgb() {
+  return new Promise(resolve => {
+    const cb = el('input', { type: 'checkbox', style: 'width:20px;height:20px;flex:none;accent-color:#FF2800' });
+    const err = el('div', { class: 'error' });
+    const next = el('button', { class: 'btn', disabled: true }, 'Weiter');
+    const out = el('button', { class: 'btn ghost' }, 'Abmelden');
+    const overlay = el('div', { class: 'modal-overlay' }, el('div', { class: 'modal' },
+      el('div', { class: 'modal-head' }, el('strong', {}, 'AGB')),
+      el('div', { class: 'modal-body' },
+        el('p', {}, 'Wir haben unsere AGB. Bitte lies sie und stimme zu.'),
+        el('p', {}, el('a', { href: 'agb.html', target: '_blank', rel: 'noopener' }, 'AGB lesen')),
+        el('label', { style: 'display:flex;align-items:flex-start;gap:8px;margin:10px 0;cursor:pointer' }, cb,
+          el('span', {}, 'Ich habe die AGB gelesen und stimme zu.')),
+        err,
+        el('div', { class: 'row end' }, out, next))));
+    cb.addEventListener('change', () => { next.disabled = !cb.checked; });
+    next.addEventListener('click', async () => {
+      next.disabled = true; err.textContent = '';
+      try { await call('accept_agb'); }
+      catch (x) {
+        if (!/accept_agb|schema cache|does not exist/i.test(x.message)) {
+          err.textContent = 'Das hat nicht geklappt. Versuche es noch einmal.'; next.disabled = !cb.checked; return;
+        }
+      }
+      overlay.remove(); resolve(true);
+    });
+    out.addEventListener('click', () => { overlay.remove(); resolve(false); });
+    document.body.append(overlay);
+  });
 }
 
 function buildMain() {

@@ -1,4 +1,4 @@
-import { sb, state, el, nameHtml, toast, call, openModal, closeModal } from '../core.js';
+import { sb, state, el, nameHtml, toast, call, openModal, closeModal, statusLabel } from '../core.js';
 import { avatarEl } from '../avatar.js';
 
 const norm = s => String(s || '').toLowerCase().replace(/\s+/g, '');
@@ -18,6 +18,7 @@ function profileView(p, roleText) {
     avatarEl({ url: p.avatar_url, name: p.display_name || p.username, seed: p.id, cls: 'lg' }),
     name,
     el('div', { class: 'muted' }, roleText),
+    statusLabel(p.status) ? el('div', { class: 'status-line' }, statusLabel(p.status)) : null,
     p.id !== state.me.id ? el('button', {
       class: 'btn',
       onclick: async () => {

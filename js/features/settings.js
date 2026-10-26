@@ -1,4 +1,4 @@
-import { sb, state, el, esc, nameHtml, toast, call, openModal, closeModal, confirmDialog } from '../core.js';
+import { sb, state, el, esc, nameHtml, toast, call, openModal, closeModal, confirmDialog, STATUS } from '../core.js';
 import { avatarEditor } from '../avatar.js';
 import { hasPin, setPin, removePin } from '../pinlock.js';
 
@@ -47,6 +47,27 @@ export function openSettings() {
     } }, 'Speichern'),
     prev,
     el('div', { class: 'muted small', style: 'margin-top:8px' }, 'Was die App speichert, steht in den ', el('a', { href: 'agb.html', target: '_blank', rel: 'noopener' }, 'AGB'), '.')));
+
+  // Status
+  const stSel = el('select', {}, el('option', { value: '' }, 'Kein Status'),
+    Object.entries(STATUS).map(([k, t]) => el('option', { value: k }, t)));
+  const stDur = el('select', {}, [['never', 'Nie (bleibt)'], ['1', '1 Stunde'], ['4', '4 Stunden'], ['today', 'Heute (bis Mitternacht)']]
+    .map(([v, t]) => el('option', { value: v }, t)));
+  stSel.value = state.pub?.status || '';
+  root.append(section('Status',
+    el('label', { class: 'field' }, 'Mein Status', stSel),
+    el('label', { class: 'field' }, 'Wie lange?', stDur),
+    el('button', { class: 'btn', onclick: async () => {
+      const key = stSel.value || null;
+      let until = null;
+      if (key && stDur.value === 'today') { const d = new Date(); d.setHours(24, 0, 0, 0); until = d.toISOString(); }
+      else if (key && stDur.value !== 'never') until = new Date(Date.now() + Number(stDur.value) * 3600e3).toISOString();
+      try {
+        await call('set_my_status', { p_key: key, p_until: until });
+        if (state.pub) state.pub.status = key;
+        toast('Gespeichert');
+      } catch (e) { toast(e.message); }
+    } }, 'Speichern')));
 
   // Profilbild
   const avBox = el('div', {}, el('span', { class: 'muted small' }, 'Lade …'));

@@ -1,4 +1,4 @@
-import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes } from './core.js';
+import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel } from './core.js';
 import { openMention } from './features/mentions.js';
 import { uploadImage, signedUrl } from './media.js';
 import { fillAvatar, avatarEl } from './avatar.js';
@@ -218,6 +218,10 @@ export async function openChat(chatId) {
     const name = c.peer ? (c.peer.display_name || c.peer.username) : (m.name || 'Chat');
     fillAvatar(c.avatar, { url: c.peer ? c.peer.avatar_url : m.avatar_url, name, seed: c.peer ? c.peer.id : m.chat_id });
     title.innerHTML = c.peer ? nameHtml(c.peer) : esc(m.name || 'Chat') + (m.verified ? ' <span class="verified" title="Verifiziert">✔</span>' : '');
+    if (c.peer && statusLabel(c.peer.status)) {
+      const st = statusLabel(c.peer.status);
+      title.insertAdjacentHTML('beforeend', ` <span class="status-emoji" title="${esc(st)}">${esc(st.split(' ')[0])}</span>`);
+    }
     const typers = [...c.typing.keys()];
     if (typers.length) {
       sub.textContent = m.type === 'direct' ? 'schreibt …'

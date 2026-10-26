@@ -81,7 +81,8 @@ export async function tabReports(box) {
   box.replaceChildren(...avRows, ...rows.map(r => {
     const d = el('div', { class: 'list-row col' });
     d.innerHTML = `<div><strong>${esc(r.reason)}</strong> <span class="status status-${r.status === 'open' ? 'aktiv' : 'verwendet'}">${r.status === 'open' ? 'offen' : 'erledigt'}</span></div>
-      <div class="muted small">von ${nameHtml(pm[r.reporter_id])} · ${esc(fmtTime(r.created_at))}</div>`;
+      <div class="muted small">von ${nameHtml(pm[r.reporter_id])} · ${esc(fmtTime(r.created_at))}</div>
+      <div class="small" style="margin-top:4px">Nachricht von @${esc(r.message_sender_username || '?')}: ${r.message_deleted ? '<em class="muted">gelöscht</em> ' : ''}${esc(r.message_body || '[Bild]')}</div>`;
     d.append(el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => reportDetail(r, () => tabReports(box)) }, 'Ansehen')));
     return d;
   }));

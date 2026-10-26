@@ -19,6 +19,7 @@ export function toggleMute(id) {
   const now = !set.has(id);
   if (now) set.add(id); else set.delete(id);
   localStorage.setItem(MUTE_KEY, JSON.stringify([...set]));
+  call('set_chat_muted_server', { p_chat_id: id, p_muted: now }).catch(() => {});
   render();
   return now;
 }
@@ -70,6 +71,7 @@ async function loadRoleNames() {
 let inbox = null;
 function listenInbox() {
   if (inbox) return;
+  const lm = [...readMuted()]; if (lm.length) call('sync_muted_chats', { p_chat_ids: lm }).catch(() => {});
   inbox = sb.channel('inbox:' + state.me.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
     const m = p.new;
     if (m.sender_id === state.me?.id) return;

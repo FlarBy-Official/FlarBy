@@ -93,12 +93,16 @@ export function renderAuth(root, { onLogin, notice } = {}) {
     const p = field('Passwort (mind. 8 Zeichen)', { type: 'password', autocomplete: 'new-password' });
     const err = el('div', { class: 'error' });
     const btn = el('button', { class: 'btn block', type: 'submit' }, 'Registrieren');
+    const agb = el('input', { type: 'checkbox', style: 'width:20px;height:20px;flex:none;accent-color:#FF2800' });
     const form = el('form', {}, u.node, p.node,
+      el('label', { style: 'display:flex;align-items:flex-start;gap:8px;margin:10px 0;cursor:pointer' }, agb,
+        el('span', {}, 'Ich habe die ', el('a', { href: 'agb.html', target: '_blank', rel: 'noopener' }, 'AGB'), ' gelesen und stimme zu.')),
       el('div', { class: 'notice-big' }, NOTICE), err, btn);
     form.addEventListener('submit', e => {
       e.preventDefault();
       busy(btn, async () => {
         err.textContent = '';
+        if (!agb.checked) { err.textContent = 'Bitte stimme den AGB zu.'; return; }
         const username = u.input.value.trim().toLowerCase();
         if (!USER_RE.test(username)) { err.textContent = 'Ungültiger Benutzername.'; return; }
         if (p.input.value.length < 8) { err.textContent = 'Das Passwort muss mindestens 8 Zeichen haben.'; return; }

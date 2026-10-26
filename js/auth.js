@@ -108,8 +108,11 @@ export function renderAuth(root, { onLogin, notice } = {}) {
         try {
           const r = await fn('register', { username, password: p.input.value });
           show(recoveryView(r.recovery_code, async () => {
-            try { await login(username, p.input.value); onLogin && onLogin(); }
-            catch (x) { showLogin(); toast(x.message); }
+            try {
+              await login(username, p.input.value);
+              try { await sb.rpc('accept_agb'); } catch { /* still ignorieren */ }
+              onLogin && onLogin();
+            } catch (x) { showLogin(); toast(x.message); }
           }));
         } catch (x) { err.textContent = x.message; }
       })();

@@ -24,6 +24,26 @@ export function toggleMute(id) {
   return now;
 }
 
+const PIN_KEY = 'fc_pinned_chats';
+export const MAX_PINNED_CHATS = 3;
+const readPinned = () => { try { return JSON.parse(localStorage.getItem(PIN_KEY) || '[]').filter(x => typeof x === 'string'); } catch { return []; } };
+export function isChatPinned(id) { return readPinned().includes(id); }
+// Gibt true (jetzt angepinnt), false (gelöst) oder null (schon 3 Chats angepinnt) zurück
+export function toggleChatPin(id) {
+  const list = readPinned();
+  const i = list.indexOf(id);
+  if (i >= 0) list.splice(i, 1);
+  else { if (list.length >= MAX_PINNED_CHATS) return null; list.push(id); }
+  localStorage.setItem(PIN_KEY, JSON.stringify(list));
+  render();
+  return i < 0;
+}
+
+// Für „Weiterleiten“: alle Chats mit Namen
+export function chatChoices() {
+  return items.map(c => ({ id: c.chat_id, text: title(c).text, type: c.type, avatar_url: c.avatar_url, seed: c.peer_user_id || c.chat_id }));
+}
+
 let audioCtx = null;
 function beep() {
   try {
@@ -131,7 +151,12 @@ function title(c) {
 
 function render() {
   if (!listEl) return;
-  const sorted = [...items].sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
+  const pins = readPinned();
+  const sorted = [...items].sort((a, b) => {
+    const pa = pins.indexOf(a.chat_id), pb = pins.indexOf(b.chat_id);
+    if (pa >= 0 || pb >= 0) return pa >= 0 && pb >= 0 ? pa - pb : pa >= 0 ? -1 : 1;
+    return new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0);
+  });
   const shown = sorted.filter(c => !query || title(c).text.toLowerCase().includes(query)
     || (c.last_message_body || '').toLowerCase().includes(query));
   if (!shown.length) {
@@ -144,6 +169,7 @@ function render() {
     nameEl.innerHTML = t.html;
     const unread = c.unread_count > 0;
     const muted = isMuted(c.chat_id);
+    const pinned = pins.includes(c.chat_id);
     const mentioned = readMentions().has(c.chat_id);
     const last = c.last_message_body === '' || c.last_message_body == null
       ? (c.last_message_at ? '📎 Anhang' : '') : c.last_message_body;
@@ -156,6 +182,7 @@ function render() {
         el('div', { class: 'chat-line' },
           el('span', { class: 'chat-last' }, prefix, c.last_message_body ? richNodes(last, { onMention: t => openMention(t, c.chat_id) }) : last),
           mentioned ? el('span', { class: 'badge', title: 'Du wurdest erwähnt' }, '@') : '',
+          pinned ? el('span', { class: 'pin-icon', title: 'Angepinnt' }, '📌') : '',
           unread ? el('span', { class: 'badge' + (muted ? ' muted' : '') }, c.unread_count > 99 ? '99+' : c.unread_count) : (muted ? el('span', { class: 'mute-icon', title: 'Stumm' }, '🔕') : ''))));
   }));
 }

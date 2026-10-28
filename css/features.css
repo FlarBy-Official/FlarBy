@@ -139,3 +139,6 @@ h4{margin:16px 0 6px}
 .sys-msg{align-self:stretch;box-sizing:border-box;width:calc(100% - 16px);margin:10px 8px;padding:12px 14px;text-align:center;background:#C40000;color:#fff;border:3px solid #FF6B6B;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.35);font-size:20px;font-weight:800;line-height:1.25;word-break:break-word}
 .sys-msg .sys-label{letter-spacing:2px}
 .sys-msg .sys-body{white-space:pre-wrap}
+.fwd-label{font-size:12px;font-style:italic;opacity:.75;margin-bottom:2px}
+.pin-icon{font-size:12px;margin-left:4px}
+.fwd-list{max-height:50vh;overflow:auto;margin-top:8px}

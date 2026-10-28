@@ -3,7 +3,7 @@ import { openMention } from './features/mentions.js';
 import { uploadImage, signedUrl } from './media.js';
 import { createVoiceRecorder, uploadVoice, isVoicePath, voicePlayer } from './features/voice.js';
 import { fillAvatar, avatarEl } from './avatar.js';
-import { refreshSoon, initial, isMuted, toggleMute, myMentionTokens } from './chatlist.js';
+import { refreshSoon, initial, isMuted, toggleMute, myMentionTokens, isChatPinned, toggleChatPin, chatChoices, MAX_PINNED_CHATS } from './chatlist.js';
 
 const EDIT_MS = 3 * 24 * 3600 * 1000;
 const PAGE = 60;
@@ -73,6 +73,18 @@ export async function openChat(chatId) {
     muteBtn.setAttribute('aria-label', m ? 'Stumm aufheben' : 'Chat stumm schalten');
   };
   showMute();
+  const pinChatBtn = el('button', { class: 'icon-btn', onclick: () => {
+    const r = toggleChatPin(chatId);
+    if (r === null) { toast(`Du kannst höchstens ${MAX_PINNED_CHATS} Chats anpinnen.`); return; }
+    showPinChat();
+    toast(r ? 'Chat ist oben angepinnt.' : 'Chat ist nicht mehr angepinnt.');
+  } });
+  const showPinChat = () => {
+    const p = isChatPinned(chatId);
+    pinChatBtn.textContent = p ? '📍' : '📌';
+    pinChatBtn.setAttribute('aria-label', p ? 'Chat nicht mehr oben anpinnen' : 'Chat oben anpinnen');
+  };
+  showPinChat();
   const title = el('div', { class: 't1' });
   const sub = el('div', { class: 't2' });
   const avatar = el('div', { class: 'avatar sm' }, '…');
@@ -83,7 +95,7 @@ export async function openChat(chatId) {
     el('div', { class: 'info', onclick: async () => {
       try { (await import('./features/chatInfo.js')).openChatInfo(chatId); } catch { toast('Chat-Info nicht verfügbar.'); }
     } }, title, sub),
-    muteBtn);
+    pinChatBtn, muteBtn);
   const msgsEl = el('div', { class: 'msgs' });
   c.msgsEl = msgsEl;
 
@@ -91,6 +103,9 @@ export async function openChat(chatId) {
   c.ctxBar = ctxBar;
   const ta = el('textarea', { rows: '1', placeholder: 'Nachricht', maxlength: '4000' });
   c.ta = ta;
+  const draftKey = 'fc_draft_' + chatId;
+  try { ta.value = localStorage.getItem(draftKey) || ''; } catch { /* kein Speicher */ }
+  const saveDraft = () => { try { if (ta.value && !c.editing) localStorage.setItem(draftKey, ta.value); else localStorage.removeItem(draftKey); } catch { /* kein Speicher */ } };
   const file = el('input', { type: 'file', accept: 'image/*', class: 'hidden' });
   const sendBtn = el('button', { class: 'icon-btn send', 'aria-label': 'Senden' }, '➤');
   const mentionBox = el('div', { class: 'mention-box hidden' });
@@ -132,6 +147,7 @@ export async function openChat(chatId) {
   ta.addEventListener('keyup', e => { if (!['Enter'].includes(e.key)) updateMentions(); });
   ta.addEventListener('click', updateMentions);
   ta.addEventListener('input', () => {
+    saveDraft();
     updateMentions();
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
@@ -170,6 +186,7 @@ export async function openChat(chatId) {
         await insertMessage({ body: text });
       }
       ta.value = ''; ta.style.height = 'auto';
+      saveDraft();
     } catch (e) { toast(e.message); }
   }
 
@@ -215,6 +232,8 @@ export async function openChat(chatId) {
     for (const [k, t] of c.typing) if (now - t > 4000) { c.typing.delete(k); ch = true; }
     if (ch) renderHead();
   }, 1000);
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
   ta.focus();
 
   function renderHead() {
@@ -449,6 +468,7 @@ export async function openChat(chatId) {
       if (mine && m.body && Date.now() - new Date(m.created_at) < EDIT_MS) b.push(['✎ Bearbeiten', () => c.setContext('edit', m)]);
       if (c.canPin && c.meta?.type !== 'direct') b.push([c.pinnedId === m.id ? '📌 Pin lösen' : '📌 Anpinnen', () => pinMessage(c.pinnedId === m.id ? null : m.id)]);
       if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(m.body).then(() => toast('Kopiert'))]);
+      if (!m.is_system && !m.poll_id) b.push(['➦ Weiterleiten', () => openForward(m)]);
       b.push(['⏰ Erinnern', () => openRemind(m)]);
       b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen (falls berechtigt)', async () => {
         if (!(await confirmDialog('Nachricht wirklich löschen?', 'Löschen'))) return;
@@ -468,6 +488,45 @@ export async function openChat(chatId) {
       el('button', { class: e === mineEmoji ? 'on' : '', 'aria-label': 'Reagieren mit ' + e, onclick: () => { modal.close(); react(m, e); } }, e)));
     const modal = openModal('Nachricht', el('div', { class: 'menu-list' }, emojiRow,
       b.map(([label, fnc, cls]) => el('button', { class: cls || '', onclick: () => { modal.close(); fnc(); } }, label))));
+  }
+
+  function openForward(m) {
+    const choices = chatChoices();
+    if (!choices.length) { toast('Keine Chats vorhanden.'); return; }
+    const q = el('input', { type: 'search', placeholder: 'Chat suchen' });
+    const list = el('div', { class: 'menu-list fwd-list' });
+    const modal = openModal('Weiterleiten an …', el('div', {}, q, list));
+    const draw = () => {
+      const t = q.value.trim().toLowerCase();
+      const hits = choices.filter(x => !t || x.text.toLowerCase().includes(t));
+      list.replaceChildren(...(hits.length ? hits.map(x => el('button', { onclick: async () => {
+        list.querySelectorAll('button').forEach(b => { b.disabled = true; });
+        try {
+          await forwardMessage(m, x.id);
+          modal.close();
+          toast('Weitergeleitet an ' + x.text);
+        } catch (e) { toast(e.message); modal.close(); }
+      } }, (x.type === 'direct' ? '💬 ' : '👥 ') + x.text)) : [el('div', { class: 'empty' }, 'Keine Treffer.')]));
+    };
+    q.addEventListener('input', draw);
+    draw();
+  }
+
+  async function forwardMessage(m, targetId) {
+    if (m.is_system) throw new Error('Systemnachrichten kann man nicht weiterleiten.');
+    let path = null;
+    if (m.media_path) {
+      const res = await fetch(await signedUrl(m.media_path));
+      if (!res.ok) throw new Error('Anhang konnte nicht geladen werden.');
+      const blob = await res.blob();
+      const ext = (m.media_path.split('.').pop() || 'jpg').toLowerCase();
+      path = `${targetId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await sb.storage.from('media').upload(path, blob, { contentType: blob.type || undefined });
+      if (error) throw new Error(error.message || 'Upload fehlgeschlagen.');
+    }
+    const { error } = await sb.from('messages').insert({ chat_id: targetId, sender_id: state.me.id, body: m.body || '', media_path: path, forwarded: true });
+    if (error) throw new Error(error.message);
+    refreshSoon();
   }
 
   function openRemind(m) {
@@ -519,6 +578,7 @@ export async function openChat(chatId) {
       q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body, { onMention: t => openMention(t, chatId) }) : mediaLabel(r)));
       node.append(q);
     }
+    if (m.forwarded && !m.deleted_at) node.append(el('div', { class: 'fwd-label' }, '↪ Weitergeleitet'));
     if (m.deleted_at) {
       node.append(el('div', { class: 'body' }, 'Diese Nachricht wurde gelöscht'));
     } else {

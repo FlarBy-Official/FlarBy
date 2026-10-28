@@ -93,3 +93,4 @@ Prüfe mit einem zweiten, eingeloggten Nutzer. Beispiel in der Browser-Konsole m
 - [ ] Dunkelmodus funktioniert.
 - [ ] Neue Nachrichten erscheinen sofort beim anderen Nutzer (Echtzeit).
 - [ ] App-PIN sperrt die App nach dem Neustart.
+- [ ] `/clear` fragt nach und löscht dann alle Nachrichten für alle. Normale Mitglieder bekommen eine Fehlermeldung.

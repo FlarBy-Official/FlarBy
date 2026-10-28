@@ -134,13 +134,18 @@ export async function openChat(chatId) {
   pane.replaceChildren(head, pinBar, msgsEl, composer);
 
   function updateMentions() {
-    if (/^\/[a-z]*$/i.test(ta.value) && 'ticket'.startsWith(ta.value.slice(1).toLowerCase()) && !c.editing) {
-      mentionBox.classList.remove('hidden');
-      mentionBox.replaceChildren(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
+    if (/^\/[a-z]*$/i.test(ta.value) && !c.editing) {
+      const q = ta.value.slice(1).toLowerCase();
+      const cmds = [];
+      if ('ticket'.startsWith(q)) cmds.push(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
         mentionBox.classList.add('hidden');
         runTicketCommand();
       } }, '🎫 /ticket · Support-Ticket öffnen'));
-      return;
+      if ('clear'.startsWith(q) && c.meta?.type !== 'ticket') cmds.push(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
+        mentionBox.classList.add('hidden');
+        runClearCommand();
+      } }, '🧹 /clear · Alle Nachrichten für immer löschen'));
+      if (cmds.length) { mentionBox.classList.remove('hidden'); mentionBox.replaceChildren(...cmds); return; }
     }
     const pos = ta.selectionStart ?? ta.value.length;
     const m = /(^|\s)@([\p{L}\p{N}_]*)$/u.exec(ta.value.slice(0, pos));
@@ -200,6 +205,22 @@ export async function openChat(chatId) {
     try { (await import('./features/ticket.js')).openTicketDialog(); } catch { toast('Tickets sind gerade nicht verfügbar.'); }
   }
 
+  // /clear wird nie gesendet. Es löscht alle Nachrichten des Chats für immer.
+  async function runClearCommand() {
+    ta.value = ''; ta.style.height = 'auto';
+    saveDraft();
+    mentionBox.classList.add('hidden');
+    if (!(await confirmDialog('Wirklich ALLE Nachrichten in diesem Chat für immer löschen? Das kann man nicht rückgängig machen. Das gilt für alle im Chat.', 'Alles löschen'))) return;
+    try {
+      await call('clear_chat', { p_chat_id: chatId });
+      c.msgs = []; c.byId.clear(); c.reacts.clear(); c.pinnedId = null;
+      await loadPin();
+      render(true);
+      toast('Chat geleert.');
+      refreshSoon();
+    } catch (e) { toast(e.message); }
+  }
+
   async function closeTicket() {
     if (!(await confirmDialog('Ticket wirklich schließen? Der Nutzer kann dann nichts mehr schreiben. Das Ticket verschwindet aus der Chatliste des Teams.', 'Schließen'))) return;
     try {
@@ -251,6 +272,7 @@ export async function openChat(chatId) {
     const text = ta.value.trim();
     if (!text) return;
     if (/^\/ticket$/i.test(text) && !c.editing) { runTicketCommand(); return; }
+    if (/^\/clear$/i.test(text) && !c.editing) { runClearCommand(); return; }
     try {
       if (c.editing) {
         const id = c.editing.id;
@@ -506,6 +528,8 @@ export async function openChat(chatId) {
       p => { c.typing.delete(p.new.sender_id); addMessage(p.new, p.new.sender_id === state.me.id); });
     ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
       p => { if (c.byId.has(p.new.id)) addMessage(p.new, false).then(() => { }); });
+    ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' },
+      p => { const id = p.old?.id; if (id && c.byId.has(id)) { c.byId.delete(id); c.msgs = c.msgs.filter(x => x.id !== id); render(false); } });
     ch.on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions', filter: `chat_id=eq.${chatId}` },
       p => {
         const r = p.eventType === 'DELETE' ? p.old : p.new;

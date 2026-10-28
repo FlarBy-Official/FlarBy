@@ -89,11 +89,12 @@ async function handleMessage(db: DB, messageId: string) {
   const roleName = new Map((roles ?? []).map((r: { id: string; name: string }) => [r.id, String(r.name).toLowerCase().replace(/\s+/g, "")]));
   const mentions = ((msg.body ?? "") as string).toLowerCase().match(MENTION_RE) ?? [];
 
+  const shownBody = ((msg.body ?? "") as string).replace(/\s*\/react\s*$/i, "");
   let content: string;
-  if (msg.media_path && !(msg.body ?? "").trim()) content = mediaText(msg.media_path);
-  else if (msg.body) content = msg.body;
+  if (msg.media_path && !shownBody.trim()) content = mediaText(msg.media_path);
+  else if (shownBody) content = shownBody;
   else content = "📷 Bild";
-  if (msg.media_path && (msg.body ?? "").trim()) content = mediaText(msg.media_path) + " " + msg.body;
+  if (msg.media_path && shownBody.trim()) content = mediaText(msg.media_path) + " " + shownBody;
 
   let sent = 0;
   for (const r of recipients) {
@@ -110,6 +111,7 @@ async function handleMessage(db: DB, messageId: string) {
     }
     let body: string;
     if (showText.has(r.user_id)) body = `${senderName}: ${clip(content)}`;
+    else if (chat.type === "channel") body = `📢 ${chat.name}: neue Nachricht`;
     else if (chat.type === "group") body = `${chat.name}: neue Nachricht von ${senderName}`;
     else body = `Neue Nachricht von ${senderName}`;
     sent += await sendTo(db, r.user_id, {

@@ -108,8 +108,12 @@ export function plainText(text) {
   return richNodes(text || '').map(n => n.textContent).join('');
 }
 
+const REACT_RE = /\s*\/react\s*$/i;
+export const hasReactMarker = body => REACT_RE.test(body || '');
+export const stripReact = body => String(body || '').replace(REACT_RE, '');
+
 export function richNodes(text, { mine, onMention } = {}) {
-  text = text || '';
+  text = stripReact(text);
   const toks = [];
   let last = 0;
   for (const m of text.matchAll(FMT_RE)) {

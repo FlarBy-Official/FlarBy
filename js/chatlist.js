@@ -41,7 +41,7 @@ export function toggleChatPin(id) {
 
 // Für „Weiterleiten“: alle Chats mit Namen
 export function chatChoices() {
-  return items.filter(c => c.type !== 'ticket').map(c => ({ id: c.chat_id, text: title(c).text, type: c.type, avatar_url: c.avatar_url, seed: c.peer_user_id || c.chat_id }));
+  return items.filter(c => c.type !== 'ticket' && c.type !== 'channel').map(c => ({ id: c.chat_id, text: title(c).text, type: c.type, avatar_url: c.avatar_url, seed: c.peer_user_id || c.chat_id }));
 }
 
 let audioCtx = null;
@@ -104,7 +104,7 @@ function listenInbox() {
     if (isDnd()) return;
     const mention = mentionsMe(m.body, m.chat_id);
     if (mention && !looking) { const set = readMentions(); set.add(m.chat_id); writeMentions(set); render(); }
-    if (!looking && (mention || !isMuted(m.chat_id))) beep();
+    if (!looking && (mention || !isMuted(m.chat_id) || items.find(x => x.chat_id === m.chat_id)?.type === 'channel')) beep();
   }).subscribe();
 }
 
@@ -150,6 +150,7 @@ function title(c) {
     return { html: esc(t), text: t };
   }
   const t = c.name || 'Gruppe';
+  if (c.type === 'channel') return { html: esc(t) + ' <span class="verified" title="Verifiziert">✔</span>', text: t };
   return { html: esc(t) + (c.verified ? ' <span class="verified" title="Verifiziert">✔</span>' : ''), text: t };
 }
 
@@ -157,6 +158,7 @@ function render() {
   if (!listEl) return;
   const pins = readPinned();
   const sorted = [...items].sort((a, b) => {
+    if ((a.type === 'channel') !== (b.type === 'channel')) return a.type === 'channel' ? -1 : 1;
     const pa = pins.indexOf(a.chat_id), pb = pins.indexOf(b.chat_id);
     if (pa >= 0 || pb >= 0) return pa >= 0 && pb >= 0 ? pa - pb : pa >= 0 ? -1 : 1;
     return new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0);
@@ -172,8 +174,8 @@ function render() {
     const nameEl = el('span', { class: 'chat-name' });
     nameEl.innerHTML = t.html;
     const unread = c.unread_count > 0;
-    const muted = isMuted(c.chat_id);
-    const pinned = pins.includes(c.chat_id);
+    const muted = c.type !== 'channel' && isMuted(c.chat_id);
+    const pinned = c.type !== 'channel' && pins.includes(c.chat_id);
     const mentioned = readMentions().has(c.chat_id);
     const last = c.last_message_body === '' || c.last_message_body == null
       ? (c.last_message_at ? '📎 Anhang' : '') : c.last_message_body;

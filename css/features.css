@@ -165,3 +165,11 @@ h4{margin:16px 0 6px}
 #call-screen .call-tile .call-remote{display:block;width:100%;height:100%;object-fit:cover}
 #call-screen .call-tile-name{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:6px;font-size:.85em}
 #call-screen.video .call-local{display:block;position:absolute;top:16px;right:16px;width:96px;height:130px;object-fit:cover;border-radius:10px;background:#222;transform:scaleX(-1);z-index:2}
+.chan-msg{align-self:stretch;box-sizing:border-box;margin:8px 10px;padding:8px 12px;text-align:center;background:#C40000;color:#fff;border:2px solid #FF6B6B;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:14px;line-height:1.3;word-break:break-word}
+.chan-msg.clickable{cursor:pointer}
+.chan-who{font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:2px}
+.chan-who *{color:#fff!important}
+.chan-body{white-space:pre-wrap;font-weight:600}
+.chan-time{font-size:11px;opacity:.8;margin-top:3px}
+.chan-msg .quote{background:rgba(0,0,0,.25);color:#fff;border-radius:6px;padding:3px 6px;margin-bottom:4px;font-size:12px}
+.chan-msg a{color:#fff;text-decoration:underline}

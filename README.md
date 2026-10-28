@@ -18,6 +18,7 @@ Die ganze Oberfläche ist auf Deutsch. Es gibt einen Hell- und einen Dunkelmodus
 - Freiwillige App-PIN als Sperre auf dem Gerät
 - „Passwort vergessen“ mit Wiederherstellungscode oder Ticket
 - Support-Tickets: `/ticket` tippen, Grund angeben, Chat mit dem ganzen Team
+- Ansage-Kanal „FlarChat Updates“: alle sind drin, nur Admins/Owner schreiben
 - Geschützter Admin-Bereich für den Betreiber (nur für den Owner, mit Protokoll)
 
 ## Technik (kurz erklärt)

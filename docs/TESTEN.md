@@ -60,6 +60,13 @@ Hake jeden Punkt ab. Nutze mindestens zwei Browser oder Geräte (oder ein Privat
 - [ ] Admin erzeugt temporäres Passwort. Der Nutzer muss beim Login ein neues setzen.
 
 ## Support-Tickets (/ticket)
+
+## Ansage-Kanal
+- [ ] „FlarChat Updates“ steht ganz oben, mit ✔. Kein Verlassen, kein Stummschalten.
+- [ ] Normale Nutzer sehen nur den Hinweis „Nur Admins und der Owner können hier schreiben.“
+- [ ] Admin schreibt: Nachricht erscheint rot mit Anzeigename. Push kommt bei allen.
+- [ ] Nachricht mit `/React` am Ende: alle können reagieren, `/React` ist unsichtbar. Sonst nur Admins.
+- [ ] Neuer Nutzer ist automatisch im Kanal.
 - [ ] `/ticket` tippen und senden: Es wird nichts gesendet, es öffnet sich ein Fenster (Grund + Text, 10–500 Zeichen).
 - [ ] Beim Tippen von `/` erscheint der Vorschlag „/ticket“.
 - [ ] Ticket öffnen: Chat „Ticket [Name] #0001“ erscheint beim Nutzer und bei allen Teamlern, erste Nachricht = Grund.

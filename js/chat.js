@@ -1,4 +1,4 @@
-import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel } from './core.js';
+import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel, hasReactMarker, stripReact } from './core.js';
 import { openMention } from './features/mentions.js';
 import { uploadImage, signedUrl } from './media.js';
 import { createVoiceRecorder, uploadVoice, isVoicePath, voicePlayer } from './features/voice.js';
@@ -105,7 +105,7 @@ export async function openChat(chatId) {
     el('button', { class: 'icon-btn back-btn', 'aria-label': 'Zurück', onclick: () => { location.hash = '#/'; } }, '←'),
     avatar,
     el('div', { class: 'info', onclick: async () => {
-      if (c.meta?.type === 'ticket') return;
+      if (['ticket', 'channel'].includes(c.meta?.type)) return;
       try { (await import('./features/chatInfo.js')).openChatInfo(chatId); } catch { toast('Chat-Info nicht verfügbar.'); }
     } }, title, sub),
     closeTicketBtn, callBtn, pinChatBtn, muteBtn);
@@ -210,8 +210,20 @@ export async function openChat(chatId) {
     } catch (e) { toast(e.message); }
   }
 
+  const isStaffWriter = () => ['admin', 'owner'].includes(state.profile?.global_role);
+
   // Ticket-Chat: keine Umfragen/Sprachnachrichten; geschlossen = nur lesen
   async function applyTicketState() {
+    if (c.meta?.type === 'channel') {
+      const staff = isStaffWriter();
+      pollBtn.classList.toggle('hidden', !staff);
+      composerRow.classList.toggle('hidden', !staff);
+      closedBar.classList.toggle('hidden', staff);
+      closedBar.replaceChildren(el('span', {}, '📢 Nur Admins und der Owner können hier schreiben.'));
+      muteBtn.classList.add('hidden');
+      pinChatBtn.classList.add('hidden');
+      return;
+    }
     const t = c.meta?.type === 'ticket';
     pollBtn.classList.toggle('hidden', t);
     voice.btn.classList.toggle('hidden', t);
@@ -533,6 +545,7 @@ export async function openChat(chatId) {
 
   async function canDeleteOthers() {
     if (c.meta?.type === 'direct') return false;
+    if (c.meta?.type === 'channel') return isStaffWriter();
     try {
       const { data: mem } = await sb.from('chat_members').select('role_id').eq('chat_id', chatId).eq('user_id', state.me.id).maybeSingle();
       if (!mem?.role_id) return false;
@@ -544,15 +557,16 @@ export async function openChat(chatId) {
   async function openMenu(m) {
     const mine = m.sender_id === state.me.id;
     const isTicket = c.meta?.type === 'ticket';
+    const isChannel = c.meta?.type === 'channel';
     const ticketClosed = isTicket && c.meta.ticket_status === 'closed';
     const canDel = !ticketClosed && (mine || (!m.deleted_at && await canDeleteOthers()));
     const b = [];
     if (!m.deleted_at) {
-      if (!ticketClosed) b.push(['↩ Antworten', () => c.setContext('reply', m)]);
+      if (!ticketClosed && (!isChannel || isStaffWriter())) b.push(['↩ Antworten', () => c.setContext('reply', m)]);
       if (!ticketClosed && mine && m.body && Date.now() - new Date(m.created_at) < EDIT_MS) b.push(['✎ Bearbeiten', () => c.setContext('edit', m)]);
       if (c.canPin && c.meta?.type !== 'direct') b.push([c.pinnedId === m.id ? '📌 Pin lösen' : '📌 Anpinnen', () => pinMessage(c.pinnedId === m.id ? null : m.id)]);
-      if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(m.body).then(() => toast('Kopiert'))]);
-      if (!m.is_system && !m.poll_id && !isTicket) b.push(['➦ Weiterleiten', () => openForward(m)]);
+      if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(stripReact(m.body)).then(() => toast('Kopiert'))]);
+      if (!m.is_system && !m.poll_id && !isTicket && !isChannel) b.push(['➦ Weiterleiten', () => openForward(m)]);
       if (!ticketClosed) b.push(['⏰ Erinnern', () => openRemind(m)]);
       if (canDel) b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen', async () => {
         if (!(await confirmDialog('Nachricht wirklich löschen?', 'Löschen'))) return;
@@ -568,7 +582,8 @@ export async function openChat(chatId) {
     }
     if (!b.length) return;
     const mineEmoji = c.reacts.get(m.id)?.get(state.me.id);
-    const emojiRow = m.deleted_at || isTicket ? null : el('div', { class: 'emoji-row' }, EMOJIS.map(e =>
+    const canReact = !isChannel || isStaffWriter() || hasReactMarker(m.body);
+    const emojiRow = m.deleted_at || isTicket || !canReact ? null : el('div', { class: 'emoji-row' }, EMOJIS.map(e =>
       el('button', { class: e === mineEmoji ? 'on' : '', 'aria-label': 'Reagieren mit ' + e, onclick: () => { modal.close(); react(m, e); } }, e)));
     const modal = openModal('Nachricht', el('div', { class: 'menu-list' }, emojiRow,
       b.map(([label, fnc, cls]) => el('button', { class: cls || '', onclick: () => { modal.close(); fnc(); } }, label))));
@@ -644,6 +659,43 @@ export async function openChat(chatId) {
   function bubble(m) {
     if (m.is_system && c.meta?.type === 'ticket') {
       return el('div', { class: 'sys-line', 'data-id': m.id }, m.body);
+    }
+    if (c.meta?.type === 'channel' && !m.deleted_at) {
+      const sp = profCache.get(m.sender_id);
+      const who = el('div', { class: 'chan-who' });
+      who.innerHTML = '📢 ' + nameHtml(sp);
+      const node = el('div', { class: 'chan-msg clickable', 'data-id': m.id });
+      node.append(who);
+      if (m.reply_to) {
+        const r = c.byId.get(m.reply_to);
+        node.append(el('div', { class: 'quote', onclick: () => jumpTo(m.reply_to) }, r ? (r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body) : mediaLabel(r)) : 'Nachricht nicht verfügbar'));
+      }
+      if (m.media_path && isVoicePath(m.media_path)) {
+        node.append(voicePlayer(m.media_path, signedUrl));
+      } else if (m.media_path) {
+        const img = el('img', { class: 'pic', alt: 'Bild', loading: 'lazy' });
+        signedUrl(m.media_path).then(u => { img.src = u; img.onclick = () => openModal('Bild', el('img', { src: u, style: 'max-width:100%;border-radius:6px' }), { wide: true }); })
+          .catch(() => { img.alt = 'Bild nicht ladbar'; });
+        node.append(img);
+      }
+      const poll = m.poll_id && c.polls.get(m.poll_id);
+      if (poll) node.append(pollBlock(poll));
+      else if (m.body) node.append(el('div', { class: 'chan-body' }, richNodes(m.body, { mine: myMentionTokens(chatId), onMention: t => openMention(t, chatId) })));
+      const rs = c.reacts.get(m.id);
+      if (rs?.size) {
+        const counts = new Map();
+        for (const e of rs.values()) counts.set(e, (counts.get(e) || 0) + 1);
+        const mineEmoji = rs.get(state.me.id);
+        node.append(el('div', { class: 'reacts' }, [...counts].map(([e, n]) =>
+          el('button', { class: 'react-chip' + (e === mineEmoji ? ' on' : ''), onclick: () => react(m, e) }, e + (n > 1 ? ' ' + n : '')))));
+      }
+      node.append(el('div', { class: 'chan-time' }, (m.edited_at ? 'bearbeitet · ' : '') + clock(m.created_at)));
+      node.addEventListener('click', e => {
+        if (e.target.closest('button, a, img, .quote, input')) return;
+        if (String(window.getSelection()).length) return;
+        openMenu(m);
+      });
+      return node;
     }
     if (m.is_system) {
       return el('div', { class: 'sys-msg', 'data-id': m.id },

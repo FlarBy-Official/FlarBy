@@ -8,6 +8,7 @@ Die ganze Oberfläche ist auf Deutsch. Es gibt einen Hell- und einen Dunkelmodus
 
 - Einzelchats und Gruppen
 - Bilder senden
+- Sprachanrufe im Einzelchat (📞-Knopf, nur wenn die App offen ist)
 - Antworten, Nachrichten bearbeiten (3 Tage lang) und löschen
 - Gruppenrollen mit Rechten (Besitzer, Admin, Mitglied, eigene Rollen)
 - Einladung per Code oder QR-Code

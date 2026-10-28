@@ -141,6 +141,7 @@ function buildMain() {
   ping();
   presenceTimer = setInterval(ping, 60000);
   import('./features/reminders.js').then(m => m.startReminders()).catch(() => { });
+  import('./features/call.js').then(m => m.initCalls()).catch(() => { });
 }
 
 // Große Knöpfe für Team und Owner, ganz oben in der Seitenleiste

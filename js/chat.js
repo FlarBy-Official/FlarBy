@@ -85,6 +85,10 @@ export async function openChat(chatId) {
     pinChatBtn.setAttribute('aria-label', p ? 'Chat nicht mehr oben anpinnen' : 'Chat oben anpinnen');
   };
   showPinChat();
+  const callBtn = el('button', { class: 'icon-btn hidden', 'aria-label': 'Anrufen', title: 'Anrufen', onclick: async () => {
+    try { (await import('./features/call.js')).startCall(c.peer.id, c.peer.display_name || c.peer.username); } catch { toast('Anrufe sind gerade nicht verfügbar.'); }
+  } }, '📞');
+  c.callBtn = callBtn;
   const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
   const title = el('div', { class: 't1' });
   const sub = el('div', { class: 't2' });
@@ -97,7 +101,7 @@ export async function openChat(chatId) {
       if (c.meta?.type === 'ticket') return;
       try { (await import('./features/chatInfo.js')).openChatInfo(chatId); } catch { toast('Chat-Info nicht verfügbar.'); }
     } }, title, sub),
-    closeTicketBtn, pinChatBtn, muteBtn);
+    closeTicketBtn, callBtn, pinChatBtn, muteBtn);
   const msgsEl = el('div', { class: 'msgs' });
   c.msgsEl = msgsEl;
 
@@ -273,6 +277,7 @@ export async function openChat(chatId) {
     await loadProfiles([c.meta.peer_user_id]);
     c.peer = profCache.get(c.meta.peer_user_id);
   }
+  callBtn.classList.toggle('hidden', !c.peer);
   renderHead();
   applyTicketState();
 

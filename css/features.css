@@ -144,3 +144,12 @@ h4{margin:16px 0 6px}
 .fwd-list{max-height:50vh;overflow:auto;margin-top:8px}
 .sys-line{align-self:center;max-width:90%;margin:8px auto;padding:4px 12px;text-align:center;background:var(--border);color:var(--muted);border-radius:12px;font-size:12px}
 .ticket-closed{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px;color:var(--muted);font-size:14px}
+
+/* Sprachanruf */
+#call-screen{position:fixed;inset:0;z-index:3000;background:#1b1b1f;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+#call-screen .call-icon{font-size:64px}
+#call-screen .call-name{font-size:1.6em;font-weight:600}
+#call-screen .call-status{opacity:.75}
+#call-screen .call-buttons{display:flex;gap:40px;margin-top:40px}
+.call-btn{width:68px;height:68px;border-radius:50%;border:0;font-size:28px;cursor:pointer;color:#fff}
+.call-btn.red{background:#e53935}.call-btn.green{background:#2e9e4f}.call-btn.grey{background:#555}

@@ -85,12 +85,16 @@ export async function openChat(chatId) {
     pinChatBtn.setAttribute('aria-label', p ? 'Chat nicht mehr oben anpinnen' : 'Chat oben anpinnen');
   };
   showPinChat();
-  const startPeerCall = video => async () => {
-    try { (await import('./features/call.js')).startCall(c.peer.id, c.peer.display_name || c.peer.username, chatId, video); } catch { toast('Anrufe sind gerade nicht verfügbar.'); }
+  const startChatCall = video => async () => {
+    const group = c.meta?.type === 'group';
+    const ids = [...c.members.keys()];
+    if (!group && c.peer && !ids.includes(c.peer.id)) ids.push(c.peer.id);
+    const title = group ? (c.meta.name || 'Gruppe') : (c.peer.display_name || c.peer.username);
+    try { (await import('./features/call.js')).startCall({ chatId, memberIds: ids, title, video, isGroup: group }); } catch { toast('Anrufe sind gerade nicht verfügbar.'); }
   };
   const callBtn = el('div', { class: 'hidden', style: 'display:contents' },
-    el('button', { class: 'icon-btn', 'aria-label': 'Sprachanruf', title: 'Sprachanruf', onclick: startPeerCall(false) }, '📞'),
-    el('button', { class: 'icon-btn', 'aria-label': 'Videoanruf', title: 'Videoanruf', onclick: startPeerCall(true) }, '📹'));
+    el('button', { class: 'icon-btn', 'aria-label': 'Sprachanruf', title: 'Sprachanruf', onclick: startChatCall(false) }, '📞'),
+    el('button', { class: 'icon-btn', 'aria-label': 'Videoanruf', title: 'Videoanruf', onclick: startChatCall(true) }, '📹'));
   c.callBtn = callBtn;
   const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
   const title = el('div', { class: 't1' });
@@ -280,7 +284,7 @@ export async function openChat(chatId) {
     await loadProfiles([c.meta.peer_user_id]);
     c.peer = profCache.get(c.meta.peer_user_id);
   }
-  callBtn.classList.toggle('hidden', !c.peer);
+  callBtn.classList.toggle('hidden', !['direct', 'group'].includes(c.meta?.type));
   renderHead();
   applyTicketState();
 

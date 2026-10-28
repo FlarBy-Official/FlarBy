@@ -756,7 +756,6 @@ export async function openChat(chatId) {
       const poll = m.poll_id && c.polls.get(m.poll_id);
       if (poll) node.append(pollBlock(poll));
       else if (m.body) node.append(el('div', { class: 'body' }, richNodes(m.body, { mine: myMentionTokens(chatId), onMention: t => openMention(t, chatId) })));
-      node.append(el('button', { class: 'menu-btn', 'aria-label': 'Menü', onclick: () => openMenu(m) }, '▾'));
     }
     const rs = c.reacts.get(m.id);
     if (rs?.size && !m.deleted_at) {

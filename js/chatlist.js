@@ -41,7 +41,7 @@ export function toggleChatPin(id) {
 
 // Für „Weiterleiten“: alle Chats mit Namen
 export function chatChoices() {
-  return items.map(c => ({ id: c.chat_id, text: title(c).text, type: c.type, avatar_url: c.avatar_url, seed: c.peer_user_id || c.chat_id }));
+  return items.filter(c => c.type !== 'ticket').map(c => ({ id: c.chat_id, text: title(c).text, type: c.type, avatar_url: c.avatar_url, seed: c.peer_user_id || c.chat_id }));
 }
 
 let audioCtx = null;
@@ -144,6 +144,10 @@ function title(c) {
   if (c.type === 'direct') {
     const p = peers.get(c.peer_user_id);
     return { html: p ? nameHtml(p) : esc(c.name || 'Chat'), text: p ? (p.display_name || p.username) : (c.name || 'Chat') };
+  }
+  if (c.type === 'ticket') {
+    const t = (c.name || 'Ticket') + (c.ticket_status === 'closed' ? ' · geschlossen' : '');
+    return { html: esc(t), text: t };
   }
   const t = c.name || 'Gruppe';
   return { html: esc(t) + (c.verified ? ' <span class="verified" title="Verifiziert">✔</span>' : ''), text: t };

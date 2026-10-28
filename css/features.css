@@ -142,3 +142,5 @@ h4{margin:16px 0 6px}
 .fwd-label{font-size:12px;font-style:italic;opacity:.75;margin-bottom:2px}
 .pin-icon{font-size:12px;margin-left:4px}
 .fwd-list{max-height:50vh;overflow:auto;margin-top:8px}
+.sys-line{align-self:center;max-width:90%;margin:8px auto;padding:4px 12px;text-align:center;background:var(--border);color:var(--muted);border-radius:12px;font-size:12px}
+.ticket-closed{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px;color:var(--muted);font-size:14px}

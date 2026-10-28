@@ -59,6 +59,18 @@ Hake jeden Punkt ab. Nutze mindestens zwei Browser oder Geräte (oder ein Privat
 - [ ] Ticket senden klappt. Das vierte Ticket innerhalb einer Stunde wird abgelehnt.
 - [ ] Admin erzeugt temporäres Passwort. Der Nutzer muss beim Login ein neues setzen.
 
+## Support-Tickets (/ticket)
+- [ ] `/ticket` tippen und senden: Es wird nichts gesendet, es öffnet sich ein Fenster (Grund + Text, 10–500 Zeichen).
+- [ ] Beim Tippen von `/` erscheint der Vorschlag „/ticket“.
+- [ ] Ticket öffnen: Chat „Ticket [Name] #0001“ erscheint beim Nutzer und bei allen Teamlern, erste Nachricht = Grund.
+- [ ] Zweites `/ticket` bei offenem Ticket: Hinweis mit Knopf „Zu meinem Ticket“, kein neues Ticket.
+- [ ] Im Ticket gibt es keine Reaktionen, Umfragen, Sprachnachrichten, Weiterleiten, Melden.
+- [ ] Stummgeschalteter Nutzer kann kein Ticket öffnen und nicht darin schreiben.
+- [ ] Teamler schließt das Ticket: Systemzeile „Ticket geschlossen von …“, Nutzer kann nur lesen, Ticket verschwindet bei allen Teamlern.
+- [ ] `/ticket` bei geschlossenem, nicht gelöschtem Ticket: Hinweis, erst löschen. Nach „Ticket löschen“ geht ein neues.
+- [ ] Neuer Teamler (Rolle vergeben) ist sofort in offenen Tickets; entzogene Rolle: raus aus offenen Tickets.
+- [ ] Owner sieht alle Tickets (auch geschlossene und gelöschte) im Admin-Panel unter „Support“.
+
 ## RLS-Schutz (Datenschutz in der Datenbank)
 Prüfe mit einem zweiten, eingeloggten Nutzer. Beispiel in der Browser-Konsole mit dem Supabase-Client.
 - [ ] Fremde Chats: `select` auf `messages` eines Chats, in dem man nicht Mitglied ist, liefert keine Zeilen.

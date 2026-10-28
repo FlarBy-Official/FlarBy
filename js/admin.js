@@ -47,7 +47,7 @@ function mainScreen() {
   screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
-    tabs.replaceChildren(...[['stats', 'Statistik'], ['chats', 'Chats'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['announce', 'Ansage'], ['words', 'Wörter'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['users', 'Nutzer'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
+    tabs.replaceChildren(...[['stats', 'Statistik'], ['chats', 'Chats'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['announce', 'Ansage'], ['words', 'Wörter'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['support', 'Support'], ['users', 'Nutzer'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
       if (id === 'chats') return chatsView(view);
@@ -56,6 +56,7 @@ function mainScreen() {
         return ({ stats: x.statsView, activity: x.activityView, codes: x.codesView, announce: x.announceView, words: x.wordsView })[id](view);
       }
       if (id === 'audit') return auditView(view);
+      if (id === 'support') return supportView(view);
       const t = await import('./features/team.js');
       return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers, errors: t.tabErrors })[id](view);
     };
@@ -71,11 +72,25 @@ async function chatsView(view) {
   const draw = q => list.replaceChildren(...(chats.filter(c => !q || `${title(c)} ${c.members || ''}`.toLowerCase().includes(q)).map(c =>
     el('button', { class: 'list-row link', onclick: () => readChat(view, c, () => chatsView(view).catch(e => toast(e.message))) },
       el('span', { class: 'grow' }, title(c), el('span', { class: 'muted small' }, c.members ? ' · ' + c.members : '')),
-      el('span', { class: 'muted small' }, c.type === 'group' ? 'Gruppe' : 'Direkt')))));
+      el('span', { class: 'muted small' }, c.type === 'group' ? 'Gruppe' : c.type === 'ticket' ? 'Ticket' : 'Direkt')))));
   draw('');
   const i = el('input', { type: 'search', placeholder: 'Chat oder Nutzer suchen …', style: 'width:100%;margin:6px 0' });
   i.addEventListener('input', () => draw(i.value.trim().toLowerCase()));
   view.replaceChildren(i, chats.length ? list : el('p', { class: 'muted' }, 'Keine Chats.'));
+}
+
+async function supportView(view) {
+  const rows = (await call('admin_list_support_tickets')) || [];
+  const num = n => '#' + String(n).padStart(4, '0');
+  const list = el('div', {}, ...(rows.length ? rows.map(t => {
+    const state = t.status === 'open' ? 'offen' : 'geschlossen' + (t.closed_by_username ? ' von @' + t.closed_by_username : '');
+    return el('button', { class: 'list-row link wrap', onclick: () => readChat(view, { id: t.chat_id, name: t.name }, () => supportView(view).catch(e => toast(e.message))) },
+      el('span', { class: 'grow' }, `${num(t.number)} · ${t.display_name} `, el('span', { class: 'muted small' }, `@${t.username} · ${t.reason}`)),
+      el('span', { class: 'status ' + (t.status === 'open' ? 'status-aktiv' : 'status-abgelaufen') }, state),
+      t.user_deleted_at ? el('span', { class: 'status status-widerrufen' }, 'vom Nutzer gelöscht') : null,
+      el('span', { class: 'muted small' }, `${fmt(t.created_at)} · ${t.message_count} Nachr.`));
+  }) : [el('p', { class: 'muted' }, 'Noch keine Support-Tickets.')]));
+  view.replaceChildren(list);
 }
 
 function systemComposer(view, chat, back) {

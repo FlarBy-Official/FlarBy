@@ -93,9 +93,10 @@ export async function openChat(chatId) {
     el('button', { class: 'icon-btn back-btn', 'aria-label': 'Zurück', onclick: () => { location.hash = '#/'; } }, '←'),
     avatar,
     el('div', { class: 'info', onclick: async () => {
+      if (c.meta?.type === 'ticket') return;
       try { (await import('./features/chatInfo.js')).openChatInfo(chatId); } catch { toast('Chat-Info nicht verfügbar.'); }
     } }, title, sub),
-    pinChatBtn, muteBtn);
+    closeTicketBtn, pinChatBtn, muteBtn);
   const msgsEl = el('div', { class: 'msgs' });
   c.msgsEl = msgsEl;
 
@@ -110,17 +111,26 @@ export async function openChat(chatId) {
   const sendBtn = el('button', { class: 'icon-btn send', 'aria-label': 'Senden' }, '➤');
   const mentionBox = el('div', { class: 'mention-box hidden' });
   const voice = createVoiceRecorder(async blob => { await insertMessage({ body: '', media_path: await uploadVoice(chatId, blob) }); });
-  const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar, voice.bar,
-    el('div', { class: 'composer' },
-      el('button', { class: 'icon-btn', 'aria-label': 'Bild senden', onclick: () => file.click() }, '📎'),
-      voice.btn,
-      el('button', { class: 'icon-btn', 'aria-label': 'Umfrage erstellen', onclick: () => openPollForm() }, '📊'),
-      file, ta, sendBtn));
+  const pollBtn = el('button', { class: 'icon-btn', 'aria-label': 'Umfrage erstellen', onclick: () => openPollForm() }, '📊');
+  const composerRow = el('div', { class: 'composer' },
+    el('button', { class: 'icon-btn', 'aria-label': 'Bild senden', onclick: () => file.click() }, '📎'),
+    voice.btn, pollBtn, file, ta, sendBtn);
+  const closedBar = el('div', { class: 'ticket-closed hidden' });
+  const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar, voice.bar, composerRow, closedBar);
+  const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
   const pinBar = el('div', { class: 'pin-bar hidden' });
   c.pinBar = pinBar;
   pane.replaceChildren(head, pinBar, msgsEl, composer);
 
   function updateMentions() {
+    if (/^\/[a-z]*$/i.test(ta.value) && 'ticket'.startsWith(ta.value.slice(1).toLowerCase()) && !c.editing) {
+      mentionBox.classList.remove('hidden');
+      mentionBox.replaceChildren(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
+        mentionBox.classList.add('hidden');
+        runTicketCommand();
+      } }, '🎫 /ticket · Support-Ticket öffnen'));
+      return;
+    }
     const pos = ta.selectionStart ?? ta.value.length;
     const m = /(^|\s)@([\p{L}\p{N}_]*)$/u.exec(ta.value.slice(0, pos));
     if (!m) { mentionBox.classList.add('hidden'); return; }
@@ -171,9 +181,53 @@ export async function openChat(chatId) {
     } catch (e) { toast(e.message); }
   });
 
+  // /ticket wird nie gesendet. Es öffnet nur ein Fenster beim Nutzer.
+  async function runTicketCommand() {
+    ta.value = ''; ta.style.height = 'auto';
+    saveDraft();
+    mentionBox.classList.add('hidden');
+    try { (await import('./features/ticket.js')).openTicketDialog(); } catch { toast('Tickets sind gerade nicht verfügbar.'); }
+  }
+
+  async function closeTicket() {
+    if (!(await confirmDialog('Ticket wirklich schließen? Der Nutzer kann dann nichts mehr schreiben. Das Ticket verschwindet aus der Chatliste des Teams.', 'Schließen'))) return;
+    try {
+      await call('close_support_ticket', { p_chat_id: chatId });
+      toast('Ticket geschlossen.');
+      location.hash = '#/';
+      refreshSoon();
+    } catch (e) { toast(e.message); }
+  }
+
+  // Ticket-Chat: keine Umfragen/Sprachnachrichten; geschlossen = nur lesen
+  async function applyTicketState() {
+    const t = c.meta?.type === 'ticket';
+    pollBtn.classList.toggle('hidden', t);
+    voice.btn.classList.toggle('hidden', t);
+    if (!t) return;
+    const closed = c.meta.ticket_status === 'closed';
+    composerRow.classList.toggle('hidden', closed);
+    closedBar.classList.toggle('hidden', !closed);
+    closeTicketBtn.classList.toggle('hidden', closed || !['moderator', 'admin', 'owner'].includes(state.profile?.global_role));
+    if (c.ticketOwner === undefined) {
+      try { c.ticketOwner = (await (await import('./features/ticket.js')).myTicket())?.chat_id === chatId; } catch { c.ticketOwner = false; }
+    }
+    closedBar.replaceChildren(el('span', {}, '🔒 Dieses Ticket ist geschlossen. Man kann nichts mehr schreiben.'),
+      c.ticketOwner ? el('button', { class: 'btn small', onclick: async () => {
+        if (!(await confirmDialog('Ticket löschen? Es verschwindet dann bei dir.', 'Löschen'))) return;
+        try {
+          await call('delete_my_support_ticket', { p_chat_id: chatId });
+          toast('Ticket gelöscht.');
+          location.hash = '#/';
+          refreshSoon();
+        } catch (e) { toast(e.message); }
+      } }, '🗑 Ticket löschen') : null);
+  }
+
   async function send() {
     const text = ta.value.trim();
     if (!text) return;
+    if (/^\/ticket$/i.test(text) && !c.editing) { runTicketCommand(); return; }
     try {
       if (c.editing) {
         const id = c.editing.id;
@@ -220,6 +274,7 @@ export async function openChat(chatId) {
     c.peer = profCache.get(c.meta.peer_user_id);
   }
   renderHead();
+  applyTicketState();
 
   await Promise.all([loadMembers(), loadMessages(), loadReactions(), loadPolls(), loadPin()]);
   if (c.dead) return;
@@ -249,6 +304,8 @@ export async function openChat(chatId) {
     if (typers.length) {
       sub.textContent = m.type === 'direct' ? 'schreibt …'
         : typers.map(id => (profCache.get(id)?.display_name || profCache.get(id)?.username || 'Jemand')).join(', ') + ' schreibt …';
+    } else if (m.type === 'ticket') {
+      sub.textContent = m.ticket_status === 'closed' ? 'Support-Ticket · geschlossen' : 'Support-Ticket · offen';
     } else if (m.type === 'direct') {
       const on = c.online.has(m.peer_user_id);
       sub.textContent = on ? 'online' : (c.peer?.last_seen ? 'zuletzt online ' + new Date(c.peer.last_seen).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
@@ -445,9 +502,11 @@ export async function openChat(chatId) {
       async p => {
         if (p.eventType === 'DELETE') { toast('Dieser Chat wurde gelöscht.'); location.hash = '#/'; return; }
         const { data } = await sb.from('chat_overview').select('*').eq('chat_id', chatId).maybeSingle();
-        if (data && !c.dead) { c.meta = data; renderHead(); }
+        if (data && !c.dead) { c.meta = data; renderHead(); applyTicketState(); }
         loadPin().catch(() => { });
       });
+    ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_members' },
+      p => { if (p.old?.chat_id === chatId && p.old?.user_id === state.me.id && c.meta?.type === 'ticket') { location.hash = '#/'; refreshSoon(); } });
     ch.subscribe(status => { if (status === 'SUBSCRIBED') ch.track({ user_id: state.me.id, at: Date.now() }); });
   }
 
@@ -472,15 +531,17 @@ export async function openChat(chatId) {
 
   async function openMenu(m) {
     const mine = m.sender_id === state.me.id;
-    const canDel = mine || (!m.deleted_at && await canDeleteOthers());
+    const isTicket = c.meta?.type === 'ticket';
+    const ticketClosed = isTicket && c.meta.ticket_status === 'closed';
+    const canDel = !ticketClosed && (mine || (!m.deleted_at && await canDeleteOthers()));
     const b = [];
     if (!m.deleted_at) {
-      b.push(['↩ Antworten', () => c.setContext('reply', m)]);
-      if (mine && m.body && Date.now() - new Date(m.created_at) < EDIT_MS) b.push(['✎ Bearbeiten', () => c.setContext('edit', m)]);
+      if (!ticketClosed) b.push(['↩ Antworten', () => c.setContext('reply', m)]);
+      if (!ticketClosed && mine && m.body && Date.now() - new Date(m.created_at) < EDIT_MS) b.push(['✎ Bearbeiten', () => c.setContext('edit', m)]);
       if (c.canPin && c.meta?.type !== 'direct') b.push([c.pinnedId === m.id ? '📌 Pin lösen' : '📌 Anpinnen', () => pinMessage(c.pinnedId === m.id ? null : m.id)]);
       if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(m.body).then(() => toast('Kopiert'))]);
-      if (!m.is_system && !m.poll_id) b.push(['➦ Weiterleiten', () => openForward(m)]);
-      b.push(['⏰ Erinnern', () => openRemind(m)]);
+      if (!m.is_system && !m.poll_id && !isTicket) b.push(['➦ Weiterleiten', () => openForward(m)]);
+      if (!ticketClosed) b.push(['⏰ Erinnern', () => openRemind(m)]);
       if (canDel) b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen', async () => {
         if (!(await confirmDialog('Nachricht wirklich löschen?', 'Löschen'))) return;
         try {
@@ -489,13 +550,13 @@ export async function openChat(chatId) {
           render(false);
         } catch (e) { toast(e.message); }
       }, 'danger']);
-      if (!mine) b.push(['⚑ Melden', async () => {
+      if (!mine && !isTicket) b.push(['⚑ Melden', async () => {
         try { (await import('./features/report.js')).openReport(m.id); } catch { toast('Melden nicht verfügbar.'); }
       }, 'danger']);
     }
     if (!b.length) return;
     const mineEmoji = c.reacts.get(m.id)?.get(state.me.id);
-    const emojiRow = m.deleted_at ? null : el('div', { class: 'emoji-row' }, EMOJIS.map(e =>
+    const emojiRow = m.deleted_at || isTicket ? null : el('div', { class: 'emoji-row' }, EMOJIS.map(e =>
       el('button', { class: e === mineEmoji ? 'on' : '', 'aria-label': 'Reagieren mit ' + e, onclick: () => { modal.close(); react(m, e); } }, e)));
     const modal = openModal('Nachricht', el('div', { class: 'menu-list' }, emojiRow,
       b.map(([label, fnc, cls]) => el('button', { class: cls || '', onclick: () => { modal.close(); fnc(); } }, label))));
@@ -569,13 +630,16 @@ export async function openChat(chatId) {
   }
 
   function bubble(m) {
+    if (m.is_system && c.meta?.type === 'ticket') {
+      return el('div', { class: 'sys-line', 'data-id': m.id }, m.body);
+    }
     if (m.is_system) {
       return el('div', { class: 'sys-msg', 'data-id': m.id },
         el('div', { class: 'sys-label' }, 'SYSTEM'), el('div', { class: 'sys-body' }, m.body));
     }
     const mine = m.sender_id === state.me.id;
     const node = el('div', { class: 'msg' + (mine ? ' me' : '') + (m.deleted_at ? ' deleted' : ''), 'data-id': m.id });
-    if (!mine && c.meta.type === 'group') {
+    if (!mine && (c.meta.type === 'group' || c.meta.type === 'ticket')) {
       const sp = profCache.get(m.sender_id);
       const who = el('div', { class: 'who' });
       who.innerHTML = nameHtml(sp);

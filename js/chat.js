@@ -85,6 +85,7 @@ export async function openChat(chatId) {
     pinChatBtn.setAttribute('aria-label', p ? 'Chat nicht mehr oben anpinnen' : 'Chat oben anpinnen');
   };
   showPinChat();
+  const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
   const title = el('div', { class: 't1' });
   const sub = el('div', { class: 't2' });
   const avatar = el('div', { class: 'avatar sm' }, '…');
@@ -117,7 +118,6 @@ export async function openChat(chatId) {
     voice.btn, pollBtn, file, ta, sendBtn);
   const closedBar = el('div', { class: 'ticket-closed hidden' });
   const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar, voice.bar, composerRow, closedBar);
-  const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
   const pinBar = el('div', { class: 'pin-bar hidden' });
   c.pinBar = pinBar;
   pane.replaceChildren(head, pinBar, msgsEl, composer);

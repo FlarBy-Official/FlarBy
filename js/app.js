@@ -53,7 +53,7 @@ async function start() {
     await forcePasswordChange(app);
     prof.must_change_password = false;
   }
-  if (prof && 'agb_accepted_at' in prof && !prof.agb_accepted_at) {
+  if (prof && 'agb_accepted_at' in prof && (!prof.agb_accepted_at || await agbRenewed(prof.agb_accepted_at))) {
     const ok = await askAgb();
     if (!ok) { enteredFor = null; await sb.auth.signOut(); return showAuth(); }
     prof.agb_accepted_at = new Date().toISOString();
@@ -62,6 +62,14 @@ async function start() {
   showAvatarNotice();
   showAnnouncement();
   window.addEventListener('flarchat:avatar-changed', () => refreshChatList());
+}
+
+// true, wenn der Owner die AGB nach der letzten Zustimmung erneut angefordert hat
+async function agbRenewed(acceptedAt) {
+  try {
+    const { data } = await sb.from('app_settings').select('value').eq('key', 'agb_required_at').maybeSingle();
+    return !!data?.value?.at && new Date(data.value.at) > new Date(acceptedAt);
+  } catch { return false; }
 }
 
 // Blockierendes Fenster; true = zugestimmt (oder Datenbank kennt accept_agb noch nicht), false = abgemeldet

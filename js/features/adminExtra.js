@@ -68,7 +68,13 @@ export async function announceView(view) {
     el('p', {}, 'Alle sehen diese Ansage beim nächsten Öffnen der App.'), ta,
     el('div', { class: 'row' },
       el('button', { class: 'btn', onclick: send(() => ta.value) }, '📢 An alle senden'),
-      el('button', { class: 'btn ghost', onclick: send(() => '') }, 'Ansage entfernen')));
+      el('button', { class: 'btn ghost', onclick: send(() => '') }, 'Ansage entfernen')),
+    el('hr'),
+    el('p', {}, 'AGB: Alle müssen die AGB beim nächsten Einloggen erneut lesen und zustimmen.'),
+    el('button', { class: 'btn', onclick: async () => {
+      if (!(await confirmDialog('Alle Nutzer müssen die AGB beim nächsten Einloggen erneut bestätigen. Fortfahren?', 'Ja, anfordern'))) return;
+      try { await call('admin_require_agb_again'); toast('AGB werden erneut angefordert.'); } catch (e) { toast(e.message); }
+    } }, '📜 AGBs erneut anfordern'));
 }
 
 export async function wordsView(view) {

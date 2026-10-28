@@ -85,9 +85,12 @@ export async function openChat(chatId) {
     pinChatBtn.setAttribute('aria-label', p ? 'Chat nicht mehr oben anpinnen' : 'Chat oben anpinnen');
   };
   showPinChat();
-  const callBtn = el('button', { class: 'icon-btn hidden', 'aria-label': 'Anrufen', title: 'Anrufen', onclick: async () => {
-    try { (await import('./features/call.js')).startCall(c.peer.id, c.peer.display_name || c.peer.username); } catch { toast('Anrufe sind gerade nicht verfügbar.'); }
-  } }, '📞');
+  const startPeerCall = video => async () => {
+    try { (await import('./features/call.js')).startCall(c.peer.id, c.peer.display_name || c.peer.username, chatId, video); } catch { toast('Anrufe sind gerade nicht verfügbar.'); }
+  };
+  const callBtn = el('div', { class: 'hidden', style: 'display:contents' },
+    el('button', { class: 'icon-btn', 'aria-label': 'Sprachanruf', title: 'Sprachanruf', onclick: startPeerCall(false) }, '📞'),
+    el('button', { class: 'icon-btn', 'aria-label': 'Videoanruf', title: 'Videoanruf', onclick: startPeerCall(true) }, '📹'));
   c.callBtn = callBtn;
   const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
   const title = el('div', { class: 't1' });

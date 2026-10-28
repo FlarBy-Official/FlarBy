@@ -1,4 +1,4 @@
-// Sprachanrufe (WebRTC). Die Absprache läuft über Supabase Realtime (Broadcast), es wird nichts gespeichert.
+// Sprach- und Videoanrufe (WebRTC). Die Absprache läuft über Supabase Realtime (Broadcast), es wird nichts gespeichert.
 import { sb, state, el, toast } from '../core.js';
 
 const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
@@ -45,8 +45,9 @@ function stopRing() { clearInterval(ringTimer); ringTimer = null; navigator.vibr
 function showScreen(name, statusText, buttons) {
   document.getElementById('call-screen')?.remove();
   const status = el('div', { class: 'call-status' }, statusText);
-  const screen = el('div', { id: 'call-screen' },
-    el('div', { class: 'call-icon' }, '📞'),
+  const screen = el('div', { id: 'call-screen', class: call?.video ? 'video' : '' },
+    call?.video ? [call.remoteEl, call.localEl] : '',
+    el('div', { class: 'call-icon' }, call?.video ? '📹' : '📞'),
     el('div', { class: 'call-name' }, name),
     status,
     el('div', { class: 'call-buttons' }, buttons));
@@ -63,23 +64,51 @@ function inCallButtons() {
     t.enabled = !t.enabled;
     mute.textContent = t.enabled ? '🎤' : '🔇';
   };
-  return [mute, el('button', { class: 'call-btn red', 'aria-label': 'Auflegen', onclick: () => endCall(true) }, '📵')];
+  const btns = [mute];
+  if (call?.video) {
+    const cam = el('button', { class: 'call-btn grey', 'aria-label': 'Kamera an/aus' }, '📹');
+    cam.onclick = () => {
+      const t = call?.local?.getVideoTracks()[0];
+      if (!t) return;
+      t.enabled = !t.enabled;
+      cam.textContent = t.enabled ? '📹' : '🚫';
+    };
+    btns.push(cam);
+  }
+  return [...btns, el('button', { class: 'call-btn red', 'aria-label': 'Auflegen', onclick: () => endCall(true) }, '📵')];
+}
+
+function newCall(fields) {
+  const remoteEl = el('video', { class: 'call-remote', autoplay: '', playsinline: '' });
+  const localEl = el('video', { class: 'call-local', autoplay: '', playsinline: '', muted: '' });
+  localEl.muted = true;
+  return { connected: false, remoteEl, localEl, ...fields };
+}
+
+// Nur der Anrufer schreibt einen Eintrag in den Chat. Die Push-Nachricht dazu geht über die normale Nachrichten-Push.
+function logCall() {
+  if (!call.caller || !call.chatId || call.logged) return;
+  call.logged = true;
+  let body;
+  if (call.connected) {
+    const s = Math.floor((Date.now() - call.t0) / 1000);
+    body = `${call.video ? '📹 Videoanruf' : '📞 Sprachanruf'} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} Min.`;
+  } else body = `${call.video ? '📹' : '📞'} Verpasster Anruf`;
+  sb.from('messages').insert({ chat_id: call.chatId, sender_id: state.me.id, body }).then(() => { }, () => { });
 }
 
 // ---------- Verbindung ----------
-async function getMic() {
+async function getMic(video) {
   if (!navigator.mediaDevices?.getUserMedia) throw new Error('Dein Gerät kann keine Anrufe machen.');
-  try { return await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch { throw new Error('Kein Zugriff auf das Mikrofon. Bitte erlaube es.'); }
+  try { return await navigator.mediaDevices.getUserMedia({ audio: true, video: video ? { facingMode: 'user' } : false }); }
+  catch { throw new Error(video ? 'Kein Zugriff auf Kamera oder Mikrofon. Bitte erlaube es.' : 'Kein Zugriff auf das Mikrofon. Bitte erlaube es.'); }
 }
 
 function makePeer(peerId) {
   const pc = new RTCPeerConnection(ICE);
-  const audio = new Audio();
-  audio.autoplay = true;
-  call.audio = audio;
+  const media = call.remoteEl;
   call.local.getTracks().forEach(t => pc.addTrack(t, call.local));
-  pc.ontrack = e => { audio.srcObject = e.streams[0]; audio.play().catch(() => { }); };
+  pc.ontrack = e => { media.srcObject = e.streams[0]; media.play().catch(() => { }); };
   pc.onicecandidate = e => { if (e.candidate) sendTo(peerId, 'signal', { callId: call.id, kind: 'ice', data: e.candidate }).catch(() => { }); };
   pc.onconnectionstatechange = () => {
     if (!call || call.pc !== pc) return;
@@ -97,9 +126,11 @@ function makePeer(peerId) {
 function onConnected() {
   if (call.connected) return;
   call.connected = true;
+  call.t0 = Date.now();
+  if (call.video) call.localEl.srcObject = call.local;
   clearTimeout(call.ringTimeout);
   stopRing();
-  const t0 = Date.now();
+  const t0 = call.t0;
   const status = showScreen(call.name, '00:00', inCallButtons());
   call.timer = setInterval(() => {
     const s = Math.floor((Date.now() - t0) / 1000);
@@ -119,11 +150,13 @@ async function flushIce() {
 
 function cleanup() {
   if (!call) return;
+  logCall();
   clearInterval(call.timer);
   clearTimeout(call.ringTimeout);
   stopRing();
   call.local?.getTracks().forEach(t => t.stop());
-  if (call.audio) call.audio.srcObject = null;
+  call.remoteEl.srcObject = null;
+  call.localEl.srcObject = null;
   try { call.pc?.close(); } catch { /* egal */ }
   call = null;
   hideScreen();
@@ -138,34 +171,34 @@ function endCall(notify, message) {
 }
 
 // ---------- Anrufen ----------
-export async function startCall(peerId, peerName) {
+export async function startCall(peerId, peerName, chatId, video = false) {
   if (call) { toast('Du bist schon in einem Anruf.'); return; }
   const id = crypto.randomUUID();
-  call = { id, peerId, name: peerName, caller: true, connected: false };
+  call = newCall({ id, peerId, name: peerName, caller: true, chatId, video });
   try {
-    call.local = await getMic();
+    call.local = await getMic(video);
   } catch (e) { call = null; toast(e.message); return; }
   showScreen(peerName, 'Klingelt …', [el('button', { class: 'call-btn red', 'aria-label': 'Auflegen', onclick: () => endCall(true) }, '📵')]);
   call.ringTimeout = setTimeout(() => endCall(true, 'Niemand hat abgenommen.'), RING_MS);
   try {
-    await sendTo(peerId, 'invite', { callId: id, name: state.pub?.display_name || state.pub?.username || 'Jemand' });
+    await sendTo(peerId, 'invite', { callId: id, video, name: state.pub?.display_name || state.pub?.username || 'Jemand' });
   } catch { endCall(false, 'Anruf konnte nicht gestartet werden.'); }
 }
 
 // ---------- Empfangen ----------
 async function onInvite(p) {
   if (call) { sendTo(p.from, 'busy', { callId: p.callId }).catch(() => { }); return; }
-  call = { id: p.callId, peerId: p.from, name: p.name || 'Jemand', caller: false, connected: false };
+  call = newCall({ id: p.callId, peerId: p.from, name: p.name || 'Jemand', caller: false, video: !!p.video });
   startRing();
   call.ringTimeout = setTimeout(() => endCall(false), RING_MS);
   const accept = el('button', { class: 'call-btn green', 'aria-label': 'Annehmen' }, '📞');
   const decline = el('button', { class: 'call-btn red', 'aria-label': 'Ablehnen' }, '📵');
-  showScreen(call.name, 'ruft dich an …', [decline, accept]);
+  showScreen(call.name, call.video ? 'Videoanruf …' : 'ruft dich an …', [decline, accept]);
   decline.onclick = () => { sendTo(p.from, 'decline', { callId: p.callId }).catch(() => { }); cleanup(); };
   accept.onclick = async () => {
     if (!call || call.id !== p.callId) return;
     stopRing();
-    try { call.local = await getMic(); }
+    try { call.local = await getMic(call.video); }
     catch (e) { sendTo(p.from, 'decline', { callId: p.callId }).catch(() => { }); cleanup(); toast(e.message); return; }
     showScreen(call.name, 'Verbinde …', inCallButtons());
     makePeer(p.from);

@@ -153,3 +153,10 @@ h4{margin:16px 0 6px}
 #call-screen .call-buttons{display:flex;gap:40px;margin-top:40px}
 .call-btn{width:68px;height:68px;border-radius:50%;border:0;font-size:28px;cursor:pointer;color:#fff}
 .call-btn.red{background:#e53935}.call-btn.green{background:#2e9e4f}.call-btn.grey{background:#555}
+#call-screen.video{background:#000}
+#call-screen .call-remote{display:none}
+#call-screen.video .call-remote{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#call-screen .call-local{display:none}
+#call-screen.video .call-local{display:block;position:absolute;top:16px;right:16px;width:110px;height:150px;object-fit:cover;border-radius:10px;background:#222;transform:scaleX(-1);z-index:1}
+#call-screen.video .call-icon,#call-screen.video .call-name,#call-screen.video .call-status{position:relative;z-index:1;text-shadow:0 1px 4px #000}
+#call-screen.video .call-buttons{position:relative;z-index:1}

@@ -1,4 +1,4 @@
-import { sb, state, el, nameHtml, toast, call, openModal } from './core.js';
+import { sb, state, el, nameHtml, toast, call, openModal, KONTO_NR } from './core.js';
 import { renderAuth, forcePasswordChange } from './auth.js';
 import { mountChatList, setActiveChat, refreshChatList, refreshSoon, openNewChat } from './chatlist.js';
 import { mountChat, openChat, closeChat } from './chat.js';
@@ -167,6 +167,8 @@ function toggleMenu(sidebar) {
   else if (['moderator', 'admin'].includes(role)) {
     items.push(['🛡 Team-Bereich', async () => (await import('./features/team.js')).openTeamPanel()]);
   }
+  items.push([KONTO_NR === '1' ? '👥 Zweites Konto (neuer Tab)' : '👥 Erstes Konto (neuer Tab)',
+    () => { window.open(location.pathname + (KONTO_NR === '1' ? '?konto=2' : '?konto=1'), '_blank'); }]);
   items.push(['Abmelden', () => sb.auth.signOut()]);
   sidebar.append(el('div', { class: 'dropdown' }, items.map(([label, fn]) =>
     el('button', { onclick: async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } } }, label))));

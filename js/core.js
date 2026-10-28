@@ -1,8 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
+// Mehrere Konten im selben Browser: Mit ?konto=2 (oder 3 …) im Link hat der Tab seinen eigenen Login.
+// Ohne Angabe oder mit ?konto=1 gilt das normale Konto.
+const KONTO = (() => {
+  let k = new URLSearchParams(location.search).get('konto');
+  try {
+    if (k) sessionStorage.setItem('fc_konto', k); else k = sessionStorage.getItem('fc_konto');
+  } catch { /* kein Speicher */ }
+  return /^[2-9]$/.test(k || '') ? k : '1';
+})();
+export const KONTO_NR = KONTO;
+
 export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true },
+  auth: { persistSession: true, autoRefreshToken: true, ...(KONTO === '1' ? {} : { storageKey: 'sb-flarchat-konto-' + KONTO }) },
 });
 
 // state.me = auth user, state.profile = Zeile aus my_profile()

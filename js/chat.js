@@ -460,8 +460,19 @@ export async function openChat(chatId) {
     return others.length > 0 && others.every(([, t]) => t && new Date(t) >= new Date(m.created_at));
   }
 
-  function openMenu(m) {
+  async function canDeleteOthers() {
+    if (c.meta?.type === 'direct') return false;
+    try {
+      const { data: mem } = await sb.from('chat_members').select('role_id').eq('chat_id', chatId).eq('user_id', state.me.id).maybeSingle();
+      if (!mem?.role_id) return false;
+      const { data: role } = await sb.from('chat_roles').select('system_key,permissions').eq('id', mem.role_id).maybeSingle();
+      return role?.system_key === 'owner' || !!role?.permissions?.delete_others_messages;
+    } catch { return false; }
+  }
+
+  async function openMenu(m) {
     const mine = m.sender_id === state.me.id;
+    const canDel = mine || (!m.deleted_at && await canDeleteOthers());
     const b = [];
     if (!m.deleted_at) {
       b.push(['↩ Antworten', () => c.setContext('reply', m)]);
@@ -470,7 +481,7 @@ export async function openChat(chatId) {
       if (m.body) b.push(['⧉ Text kopieren', () => navigator.clipboard?.writeText(m.body).then(() => toast('Kopiert'))]);
       if (!m.is_system && !m.poll_id) b.push(['➦ Weiterleiten', () => openForward(m)]);
       b.push(['⏰ Erinnern', () => openRemind(m)]);
-      b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen (falls berechtigt)', async () => {
+      if (canDel) b.push([mine ? '🗑 Löschen' : '🗑 Für alle löschen', async () => {
         if (!(await confirmDialog('Nachricht wirklich löschen?', 'Löschen'))) return;
         try {
           await call('delete_message', { p_message_id: m.id });

@@ -1,15 +1,6 @@
 #!/bin/bash
-# Startet den lokalen Server. Beim ersten Mal fragt er einmal nach dem Passwort und merkt es sich
-# nur auf diesem Computer (Datei tools/.passwort, wird nie hochgeladen).
+# Startet den lokalen Server auf http://localhost:8787 (nichts einzugeben).
+# Optional: Liegt eine Datei tools/.passwort vor (nur auf diesem Computer, nie hochgeladen), loggt er automatisch ein.
 cd "$(dirname "$0")/.." || exit 1
-PW_FILE="tools/.passwort"
-if [ ! -s "$PW_FILE" ]; then
-  read -r -s -p "Passwort von bela_owner (wird beim Tippen nicht angezeigt): " PW
-  echo
-  umask 077
-  printf '%s' "$PW" > "$PW_FILE"
-fi
-FLARCHAT_PASSWORD="$(cat "$PW_FILE")" node tools/lokal-admin.mjs || {
-  rm -f "$PW_FILE"
-  echo "Das hat nicht geklappt. Das gemerkte Passwort wurde gelöscht. Starte noch einmal und tippe es neu ein."
-}
+if [ -s tools/.passwort ]; then export FLARCHAT_PASSWORD="$(cat tools/.passwort)"; fi
+exec node tools/lokal-admin.mjs

@@ -1,6 +1,6 @@
 // Lokaler Server ohne Login-Seite: http://localhost:8787/admin.html
-// Start:  FLARCHAT_PASSWORD='dein Passwort' node tools/lokal-admin.mjs
-// Das Passwort steht nur im Terminal (nie in einer Datei). Der Server hört nur auf diesem Computer (127.0.0.1).
+// Start:  node tools/lokal-admin.mjs   (optional mit FLARCHAT_PASSWORD='...' für automatischen Login)
+// Das Passwort steht nie in einer Datei im Projekt. Der Server hört nur auf diesem Computer (127.0.0.1).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -16,11 +16,6 @@ const SUPABASE_URL = cfg.match(/SUPABASE_URL\s*=\s*'([^']+)'/)[1];
 const ANON_KEY = cfg.match(/SUPABASE_ANON_KEY\s*=\s*'([^']+)'/)[1];
 const STORAGE_KEY = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
 
-if (!PASSWORD) {
-  console.error('Bitte zuerst das Passwort im Terminal setzen:\n  FLARCHAT_PASSWORD=\'dein Passwort\' node tools/lokal-admin.mjs');
-  process.exit(1);
-}
-
 async function login() {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
@@ -32,8 +27,12 @@ async function login() {
   return data;
 }
 
-let session = await login();
-setInterval(async () => { try { session = await login(); } catch (e) { console.error(e.message); } }, 30 * 60 * 1000);
+// Ohne Passwort ist es ein normaler lokaler Server: einmal im Browser einloggen, der Login bleibt gespeichert.
+let session = null;
+if (PASSWORD) {
+  session = await login();
+  setInterval(async () => { try { session = await login(); } catch (e) { console.error(e.message); } }, 30 * 60 * 1000);
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -52,7 +51,7 @@ http.createServer(async (req, res) => {
     }
     let body = await readFile(file);
     const type = TYPES[extname(file)] || 'application/octet-stream';
-    if (extname(file) === '.html') {
+    if (session && extname(file) === '.html') {
       const inject = `<script>try{localStorage.setItem(${JSON.stringify(STORAGE_KEY)},${JSON.stringify(JSON.stringify(session))})}catch(e){}</script>`;
       body = Buffer.from(body.toString('utf8').replace('<head>', '<head>' + inject));
     }
@@ -62,5 +61,5 @@ http.createServer(async (req, res) => {
     res.writeHead(404); res.end('Nicht gefunden');
   }
 }).listen(PORT, '127.0.0.1', () => {
-  console.log(`Fertig, eingeloggt als @${USER}.\nAdmin-Panel: http://localhost:${PORT}/admin.html\nApp:         http://localhost:${PORT}/`);
+  console.log(`Fertig${session ? `, eingeloggt als @${USER}` : ' (beim ersten Mal im Browser einloggen, danach bleibt es gespeichert)'}.\nAdmin-Panel: http://localhost:${PORT}/admin.html\nApp:         http://localhost:${PORT}/`);
 });

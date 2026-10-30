@@ -1,7 +1,7 @@
 -- 032: Altersverifizierung (Mindestalter 14). Idempotent.
 -- Wichtig: Nach dem Ausführen sind ALLE Nutzer außer Owner gesperrt, bis das Team sie geprüft hat.
 -- Owner sind immer geprüft. Niemand prüft sich selbst.
--- Wer chat_overview später neu definiert, muss "public._age_ok(auth.uid())" im where behalten.
+-- Wer chat_overview später neu definiert, muss "public._age_ok_me()" im where behalten.
 
 -- ---------- Tabellen (keine Policies: nur über security-definer-Funktionen erreichbar) ----------
 create table if not exists public.age_records (

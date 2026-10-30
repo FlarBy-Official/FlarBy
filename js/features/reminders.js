@@ -1,4 +1,4 @@
-import { el, esc, call, state } from '../core.js';
+import { el, esc, call, state, stripReact } from '../core.js';
 
 let started = false;
 let broken = false;
@@ -14,7 +14,7 @@ function ensureBox() {
 function showBanner(r) {
   if (shown.has(r.id)) return;
   shown.add(r.id);
-  const text = r.body ? r.body.slice(0, 200) : (r.has_media ? '📷 Bild' : 'Nachricht gelöscht');
+  const text = r.body ? stripReact(r.body).slice(0, 200) : (r.has_media ? '📷 Bild' : 'Nachricht gelöscht');
   const info = el('div', { class: 'reminder-text' });
   info.innerHTML = '⏰ <strong>Erinnerung:</strong> ' + esc(text) + (r.sender_username ? ' <small>von ' + esc(r.sender_username) + '</small>' : '');
   const done = () => { banner.remove(); call('mark_reminder_delivered', { p_id: r.id }).catch(() => { }); };

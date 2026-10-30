@@ -101,7 +101,7 @@ export function ensureAge(root, st) {
         photoBox, guardianBox,
         el('div', { class: 'muted small', style: 'margin:10px 0' }, PRIVACY_TEXT.map(t => el('p', { style: 'margin:4px 0' }, t))),
         el('label', { style: 'display:flex;align-items:flex-start;gap:8px;margin:10px 0;cursor:pointer' }, consent,
-          el('span', {}, 'Ich habe die AGB gelesen und stimme zu.')),
+          el('span', {}, 'Ich habe die ', el('a', { href: 'agb.html', target: '_blank', rel: 'noopener' }, 'AGB'), ' gelesen und stimme zu.')),
         err, btn);
 
       form.addEventListener('submit', async e => {

@@ -824,12 +824,12 @@ export async function openChat(chatId) {
     if (!c.oldestReached && c.msgs.length) nodes.push(el('button', { class: 'btn ghost load-more', onclick: () => c.loadOlder() }, 'Ältere Nachrichten laden'));
     let day = '';
     for (const m of c.msgs) {
-      if (m.is_system && m.deleted_at) continue;
+      if (m.deleted_at) continue;
       const d = new Date(m.created_at).toDateString();
       if (d !== day) { day = d; nodes.push(el('div', { class: 'day-sep' }, dayLabel(m.created_at))); }
       nodes.push(bubble(m));
     }
-    if (!c.msgs.length) nodes.push(el('div', { class: 'empty' }, 'Noch keine Nachrichten. Schreib die erste!'));
+    if (!c.msgs.some(m => !m.deleted_at)) nodes.push(el('div', { class: 'empty' }, 'Noch keine Nachrichten. Schreib die erste!'));
     msgsEl.replaceChildren(...nodes);
     msgsEl.scrollTop = stick ? msgsEl.scrollHeight : keep;
   }

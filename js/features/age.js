@@ -101,13 +101,13 @@ export function ensureAge(root, st) {
         photoBox, guardianBox,
         el('div', { class: 'muted small', style: 'margin:10px 0' }, PRIVACY_TEXT.map(t => el('p', { style: 'margin:4px 0' }, t))),
         el('label', { style: 'display:flex;align-items:flex-start;gap:8px;margin:10px 0;cursor:pointer' }, consent,
-          el('span', {}, 'Ich habe den Datenschutz-Text gelesen und stimme zu.')),
+          el('span', {}, 'Ich habe die AGB gelesen und stimme zu.')),
         err, btn);
 
       form.addEventListener('submit', async e => {
         e.preventDefault();
         err.textContent = '';
-        if (!consent.checked) { err.textContent = 'Bitte stimme dem Datenschutz-Text zu.'; return; }
+        if (!consent.checked) { err.textContent = 'Bitte stimme den AGB zu.'; return; }
         if (!locked && !birth.value) { err.textContent = 'Bitte gib dein Geburtsdatum ein.'; return; }
         const method = methodAusweis.checked ? 'ausweis' : 'buerge';
         btn.disabled = true;

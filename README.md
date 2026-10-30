@@ -43,6 +43,7 @@ docs/                    Anleitungen
 
 Die Schritt-für-Schritt-Anleitung für Einsteiger steht in
 [docs/EINRICHTUNG.md](docs/EINRICHTUNG.md).
+Die Altersprüfung ist in [docs/ALTERSPRUEFUNG.md](docs/ALTERSPRUEFUNG.md) erklärt.
 Eine Test-Checkliste steht in [docs/TESTEN.md](docs/TESTEN.md).
 Der technische Aufbau steht in [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md).
 

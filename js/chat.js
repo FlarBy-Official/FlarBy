@@ -145,6 +145,13 @@ export async function openChat(chatId) {
         mentionBox.classList.add('hidden');
         runClearCommand();
       } }, '🧹 /clear · Alle Nachrichten für immer löschen'));
+      if (c.meta?.type === 'channel' && 'react'.startsWith(q)) cmds.push(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
+        ta.value = ' /React';
+        ta.setSelectionRange(0, 0);
+        mentionBox.classList.add('hidden');
+        saveDraft();
+        ta.focus();
+      } }, '😀 /React · Alle dürfen auf diese Nachricht reagieren'));
       if (cmds.length) { mentionBox.classList.remove('hidden'); mentionBox.replaceChildren(...cmds); return; }
     }
     const rm = c.meta?.type === 'channel' && !c.editing ? /(^|\s)\/([a-z]*)$/i.exec(ta.value) : null;

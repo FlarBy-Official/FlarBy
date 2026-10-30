@@ -8,9 +8,34 @@ const KONTO = (() => {
   try {
     if (k) sessionStorage.setItem('fc_konto', k); else k = sessionStorage.getItem('fc_konto');
   } catch { /* kein Speicher */ }
-  return /^[2-9]$/.test(k || '') ? k : '1';
+  return /^([2-9]|[1-9]\d)$/.test(k || '') ? k : '1';
 })();
 export const KONTO_NR = KONTO;
+try {
+  const seen = new Set((localStorage.getItem('fc_konten') || '').split(',').filter(Boolean));
+  if (!seen.has(KONTO)) { seen.add(KONTO); localStorage.setItem('fc_konten', [...seen].join(',')); }
+} catch { /* kein Speicher */ }
+
+// Alle Konten dieses Browsers: [{ nr, name }] (name = Benutzername, wenn eingeloggt)
+export function knownKonten() {
+  const out = new Map([['1', null]]);
+  try {
+    for (const nr of (localStorage.getItem('fc_konten') || '').split(',')) if (nr) out.set(nr, null);
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || '';
+      let nr = null;
+      const m = key.match(/^sb-flarchat-konto-(\d+)$/);
+      if (m) nr = m[1];
+      else if (/^sb-[a-z0-9]+-auth-token$/.test(key) && !key.startsWith('sb-flarchat-konto-')) nr = '1';
+      if (!nr) continue;
+      let name = null;
+      try { name = JSON.parse(localStorage.getItem(key))?.user?.email?.split('@')[0] || null; } catch { /* leer */ }
+      out.set(nr, name);
+    }
+  } catch { /* kein Speicher */ }
+  out.set(KONTO, out.get(KONTO) ?? null);
+  return [...out].map(([nr, name]) => ({ nr, name })).sort((a, b) => a.nr - b.nr);
+}
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, ...(KONTO === '1' ? {} : { storageKey: 'sb-flarchat-konto-' + KONTO }) },

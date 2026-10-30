@@ -701,9 +701,9 @@ export async function openChat(chatId) {
       who.innerHTML = '📢 ' + nameHtml(sp);
       const node = el('div', { class: 'chan-msg clickable', 'data-id': m.id });
       node.append(who);
-      if (m.reply_to) {
+      if (m.reply_to && !c.byId.get(m.reply_to)?.deleted_at) {
         const r = c.byId.get(m.reply_to);
-        node.append(el('div', { class: 'quote', onclick: () => jumpTo(m.reply_to) }, r ? (r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body) : mediaLabel(r)) : 'Nachricht nicht verfügbar'));
+        node.append(el('div', { class: 'quote', onclick: () => jumpTo(m.reply_to) }, r ? (r.body ? richNodes(r.body) : mediaLabel(r)) : 'Nachricht nicht verfügbar'));
       }
       if (m.media_path && isVoicePath(m.media_path)) {
         node.append(voicePlayer(m.media_path, signedUrl));
@@ -744,18 +744,16 @@ export async function openChat(chatId) {
       who.innerHTML = nameHtml(sp);
       node.append(el('div', { class: 'who-row' }, avatarEl({ url: sp?.avatar_url, name: sp?.display_name || sp?.username, seed: m.sender_id, cls: 'xs' }), who));
     }
-    if (m.reply_to && !m.deleted_at) {
+    if (m.reply_to && !m.deleted_at && !c.byId.get(m.reply_to)?.deleted_at) {
       const r = c.byId.get(m.reply_to);
       const q = el('div', { class: 'quote', onclick: () => jumpTo(m.reply_to) });
       const qn = el('div', { class: 'qn' });
       qn.innerHTML = r ? nameHtml(profCache.get(r.sender_id)) : '';
-      q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.deleted_at ? 'Gelöschte Nachricht' : r.body ? richNodes(r.body, { onMention: t => openMention(t, chatId) }) : mediaLabel(r)));
+      q.append(qn, el('div', { class: 'qt' }, !r ? 'Nachricht nicht verfügbar' : r.body ? richNodes(r.body, { onMention: t => openMention(t, chatId) }) : mediaLabel(r)));
       node.append(q);
     }
     if (m.forwarded && !m.deleted_at) node.append(el('div', { class: 'fwd-label' }, '↪ Weitergeleitet'));
-    if (m.deleted_at) {
-      node.append(el('div', { class: 'body' }, 'Diese Nachricht wurde gelöscht'));
-    } else {
+    if (!m.deleted_at) {
       if (m.media_path && isVoicePath(m.media_path)) {
         node.append(voicePlayer(m.media_path, signedUrl));
       } else if (m.media_path) {

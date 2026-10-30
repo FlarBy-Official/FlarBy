@@ -197,6 +197,24 @@ label.field > input, label.field > textarea { margin-top: 4px; color: var(--text
   .msg { max-width: 86%; }
   .modal { max-height: 96vh; }
 }
+/* Große Monitore */
+@media (min-width: 1400px) {
+  body { font-size: 16px; }
+  #main { max-width: none; }
+  #sidebar { width: 420px; }
+  .msg { max-width: min(70%, 680px); }
+  .msg img.pic { max-height: 420px; }
+  .modal { max-width: 520px; }
+  .modal.wide { max-width: 900px; }
+}
+@media (min-width: 1900px) {
+  body { font-size: 18px; }
+  #sidebar { width: 480px; }
+  .msg { max-width: min(65%, 820px); }
+  .msg img.pic { max-height: 520px; }
+  .modal { max-width: 600px; }
+  .modal.wide { max-width: 1040px; }
+}
 .dashbar { display: flex; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 .dashbar .btn { flex: 1; padding: 8px 6px; font-size: 14px; }
 .dashbar .btn.dark { background: #222; color: #fff; }

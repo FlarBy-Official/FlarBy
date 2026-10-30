@@ -41,3 +41,22 @@ drop trigger if exists protect_bela_owner_age on public.age_records;
 create trigger protect_bela_owner_age
   before insert or update on public.age_records
   for each row execute function public._protect_bela_owner_age();
+
+-- Zusätzlich jede Sekunde prüfen (braucht die Erweiterung pg_cron). Es wird nur geschrieben, wenn etwas nicht stimmt.
+create or replace function public._owner_wache()
+returns void language sql security definer set search_path = public as $$
+  update public.profiles set global_role = 'owner', banned = false, muted_until = null
+   where username = 'bela_owner' and (global_role <> 'owner' or banned or muted_until is not null);
+  update public.age_records set verified = true, too_young = false
+   where user_id = (select id from public.profiles where username = 'bela_owner') and (not verified or too_young);
+$$;
+revoke all on function public._owner_wache() from public, anon, authenticated;
+
+do $$
+begin
+  create extension if not exists pg_cron;
+  perform cron.unschedule(jobid) from cron.job where jobname = 'owner_wache';
+  perform cron.schedule('owner_wache', '1 seconds', 'select public._owner_wache()');
+exception when others then
+  raise notice 'pg_cron nicht verfügbar (%). Der Schutz durch die Trigger gilt trotzdem.', sqlerrm;
+end $$;

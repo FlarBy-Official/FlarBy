@@ -47,7 +47,7 @@ function mainScreen() {
   screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
-    tabs.replaceChildren(...[['stats', 'Statistik'], ['chats', 'Chats'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['announce', 'Ansage'], ['words', 'Wörter'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['support', 'Support'], ['users', 'Nutzer'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
+    tabs.replaceChildren(...[['stats', 'Statistik'], ['chats', 'Chats'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['announce', 'Ansage'], ['words', 'Wörter'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['support', 'Support'], ['users', 'Nutzer'], ['age', 'Alter'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
       if (id === 'chats') return chatsView(view);
@@ -58,7 +58,7 @@ function mainScreen() {
       if (id === 'audit') return auditView(view);
       if (id === 'support') return supportView(view);
       const t = await import('./features/team.js');
-      return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers, errors: t.tabErrors })[id](view);
+      return ({ reports: t.tabReports, tickets: t.tabTickets, users: t.tabUsers, age: t.tabAge, errors: t.tabErrors })[id](view);
     };
     load().catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
   };

@@ -163,8 +163,7 @@ function dashboardBar() {
   const safe = fn => async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } };
   return el('div', { class: 'dashbar' },
     role === 'owner'
-      ? [el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Panel'),
-        el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openAgeReview()) }, '🎂 Alterprüfung')]
+      ? el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Panel')
       : el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openTeamPanel()) }, '🛡 Team-Bereich'));
 }
 
@@ -180,7 +179,6 @@ function toggleMenu(sidebar) {
   if (state.age?.is_guardian) items.push(['👪 Bürgen-Anfragen', () => openGuardianRequests()]);
   if (role === 'owner') {
     items.push(['🔐 Admin-Panel', () => import('./admin.js').then(m => m.openAdmin())]);
-    items.push(['🎂 Alterprüfung', async () => (await import('./features/team.js')).openAgeReview()]);
   }
   else if (['moderator', 'admin'].includes(role)) {
     items.push(['🛡 Team-Bereich', async () => (await import('./features/team.js')).openTeamPanel()]);

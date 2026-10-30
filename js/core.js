@@ -110,7 +110,15 @@ export function plainText(text) {
 
 const REACT_RE = /\s*\/react\s*$/i;
 export const hasReactMarker = body => REACT_RE.test(body || '');
-export const stripReact = body => String(body || '').replace(REACT_RE, '');
+const REACT_ANY = /(^|\s)\/react(?=\s|$)/gi;
+export const stripReact = body => String(body || '').replace(REACT_ANY, '$1').replace(/\s+$/, '');
+// Setzt /React immer ans Ende, auch wenn es vorne oder in der Mitte getippt wurde.
+export const moveReactToEnd = body => {
+  const t = String(body || '');
+  if (!/(^|\s)\/react(?=\s|$)/i.test(t)) return t;
+  const rest = stripReact(t).replace(/[ \t]{2,}/g, ' ').trim();
+  return rest ? rest + ' /React' : '';
+};
 
 export function richNodes(text, { mine, onMention } = {}) {
   text = stripReact(text);

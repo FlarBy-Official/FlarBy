@@ -1,4 +1,4 @@
-import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel, hasReactMarker, stripReact } from './core.js';
+import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel, hasReactMarker, stripReact, moveReactToEnd } from './core.js';
 import { openMention } from './features/mentions.js';
 import { uploadImage, signedUrl } from './media.js';
 import { createVoiceRecorder, uploadVoice, isVoicePath, voicePlayer } from './features/voice.js';
@@ -310,7 +310,7 @@ export async function openChat(chatId) {
   }
 
   async function send() {
-    const text = ta.value.trim();
+    const text = moveReactToEnd(ta.value.trim());
     if (!text) return;
     if (/^\/ticket$/i.test(text) && !c.editing) { runTicketCommand(); return; }
     if (/^\/clear$/i.test(text) && !c.editing) { runClearCommand(); return; }

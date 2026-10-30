@@ -33,7 +33,9 @@
 h4{margin:16px 0 6px}
 .list-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border,#ddd);background:none;color:inherit;border-left:0;border-right:0;border-top:0;width:100%;text-align:left;font:inherit}
 .list-row.col{flex-direction:column;align-items:stretch}
-.list-row.wrap{flex-wrap:wrap}
+.list-row.wrap{flex-wrap:wrap;gap:6px 8px}
+.list-row.wrap>.grow{flex:1 1 160px}
+.list-row.col .row.wrap{gap:6px 8px}
 .list-row.link{cursor:pointer}
 .list-row.link:hover{background:rgba(128,128,128,.1)}
 .role-dot{width:14px;height:14px;border-radius:50%;flex:none}

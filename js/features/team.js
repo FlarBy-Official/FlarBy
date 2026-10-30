@@ -282,20 +282,21 @@ export async function tabAge(box) {
   if (lvl >= 2) {
     out.push(el('h3', { style: 'margin:16px 0 6px' }, 'Alle Nutzer'));
     for (const u of users) {
-      const d = el('div', { class: 'list-row wrap' });
-      const lab = el('span', { class: 'grow' });
+      const d = el('div', { class: 'list-row col' });
+      const row = el('div', { class: 'row wrap', style: 'margin:4px 0 0' });
+      const lab = el('div', {});
       lab.innerHTML = `<strong>${esc(u.display_name || u.username)}</strong> <span class="muted small">@${esc(u.username)}</span>
         ${u.verified ? '<span class="status status-aktiv">geprüft</span>' : '<span class="status status-widerrufen">gesperrt</span>'}
         ${u.too_young ? '<span class="status status-abgelaufen">unter 14</span>' : ''}${u.is_guardian ? ' <span class="muted small">👪 Elternteil</span>' : ''}
         <span class="muted small">${u.birth_date ? '· ' + esc(new Date(u.birth_date).toLocaleDateString('de-DE')) : ''}</span>`;
-      d.append(lab);
+      d.append(lab, row);
       if (u.user_id !== state.me.id && !u.owner_auto) {
-        d.append(run(u.verified ? 'Wieder sperren' : 'Als geprüft markieren', async () => {
+        row.append(run(u.verified ? 'Wieder sperren' : 'Als geprüft markieren', async () => {
           if (!await confirmDialog(`@${u.username} ${u.verified ? 'wieder sperren' : 'als geprüft markieren'}?`, 'Ja')) throw new Error('');
           await call('age_set_verified', { p_user: u.user_id, p_value: !u.verified });
         }));
       }
-      d.append(run('Geburtsdatum ändern', async () => {
+      row.append(run('Geburtsdatum ändern', async () => {
         const t = await ask('Geburtsdatum ändern', 'Neues Datum (TT.MM.JJJJ)');
         if (!t) throw new Error('');
         const m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
@@ -304,8 +305,8 @@ export async function tabAge(box) {
         await call('age_set_birth', { p_user: u.user_id, p_birth: iso });
       }));
       if (lvl >= 3) {
-        d.append(run(u.is_guardian ? 'Kein Elternteil mehr' : 'Elternteil', () => call('age_set_guardian', { p_user: u.user_id, p_value: !u.is_guardian })));
-        if (u.birth_date || u.has_photo) d.append(run('Fotos & Datum löschen', async () => {
+        row.append(run(u.is_guardian ? 'Kein Elternteil mehr' : 'Elternteil', () => call('age_set_guardian', { p_user: u.user_id, p_value: !u.is_guardian })));
+        if (u.birth_date || u.has_photo) row.append(run('Fotos & Datum löschen', async () => {
           if (!await confirmDialog(`Alle Ausweis-Fotos und das Geburtsdatum von @${u.username} für immer löschen?`, 'Löschen')) throw new Error('');
           await call('age_owner_delete', { p_user: u.user_id });
         }, 'danger'));

@@ -21,6 +21,7 @@ export function openTeamPanel() {
   const tabs = [['reports', 'Meldungen', 1, tabReports]];
   if (lvl >= 2) tabs.push(['tickets', 'Tickets', 2, tabTickets]);
   tabs.push(['users', 'Nutzer', 1, tabUsers]);
+  tabs.push(['age', 'Alter', 1, tabAge]);
   if (lvl >= 2) tabs.push(['errors', 'Fehler', 2, tabErrors]);
 
   const content = el('div', { class: 'team-content' });
@@ -220,4 +221,97 @@ export async function tabUsers(box) {
     }
     return d;
   }));
+}
+
+const AGE_STATUS = { open: 'neu', mod_ok: 'Mod: OK', mod_no: 'Mod: Nein' };
+
+async function showAgePhoto(requestId) {
+  const data = await call('age_photo', { p_request: requestId });
+  if (!data) return toast('Kein Foto vorhanden.');
+  openModal('Ausweis-Foto', el('div', {}, el('img', { src: data, alt: 'Ausweis', style: 'max-width:100%;border-radius:8px' }),
+    el('p', { class: 'muted small' }, 'Dieser Blick steht im Protokoll.')), { wide: true });
+}
+
+export function openAgeReview() {
+  const content = el('div', { class: 'team-content' }, el('p', { class: 'muted' }, 'Lade …'));
+  const m = openModal('Alterprüfung', content, { wide: true });
+  tabAge(content).catch(e => content.replaceChildren(el('p', { class: 'error' }, e.message)));
+  return m;
+}
+
+export async function tabAge(box) {
+  const lvl = LEVEL[state.profile?.global_role] ?? 0;
+  const queue = (await call('age_queue')) || [];
+  const users = lvl >= 2 ? ((await call('age_users')) || []) : [];
+  const reload = () => tabAge(box);
+  const run = (label, fn, cls = 'ghost') => el('button', { class: 'btn small ' + cls, onclick: async () => {
+    try { await fn(); toast('Gespeichert.'); reload(); } catch (e) { if (e.message) toast(e.message); }
+  } }, label);
+
+  const out = [el('h3', { style: 'margin:0 0 6px' }, `Warteschlange (${queue.length})`)];
+  if (!queue.length) out.push(el('p', { class: 'muted' }, 'Niemand wartet.'));
+  for (const q of queue) {
+    const d = el('div', { class: 'list-row col' });
+    d.innerHTML = `<div><strong>${esc(q.display_name || q.username)}</strong> <span class="muted small">@${esc(q.username)}${q.global_role !== 'user' ? ' · ' + esc(GLOBAL_LABEL[q.global_role]) : ''}</span> <span class="status status-aktiv">${esc(AGE_STATUS[q.status] || q.status)}</span></div>
+      <div class="small">Geburtsdatum: ${q.birth_date ? esc(new Date(q.birth_date).toLocaleDateString('de-DE')) + ' (' + q.years + ' Jahre)' : '?'}${q.years != null && q.years < 14 ? ' <strong class="error">unter 14!</strong>' : ''}</div>
+      <div class="small">${q.method === 'ausweis' ? 'Ausweis-Foto' : 'Elternteil bürgt: @' + esc(q.guardian_username || '?')} · ${esc(fmtTime(q.created_at))}</div>
+      ${q.mod_name ? `<div class="muted small">Vorprüfung von @${esc(q.mod_name)}${q.mod_note ? ': ' + esc(q.mod_note) : ''}</div>` : ''}`;
+    const row = el('div', { class: 'row wrap' });
+    if (q.has_photo) row.append(el('button', { class: 'btn small', onclick: () => showAgePhoto(q.request_id).catch(e => toast(e.message)) }, 'Foto ansehen'));
+    row.append(
+      run('Vorprüfung: OK', () => call('age_mod_check', { p_request: q.request_id, p_ok: true })),
+      run('Vorprüfung: Nein', async () => {
+        const t = await ask('Vorprüfung: Nein', 'Kurze Notiz für den Admin');
+        if (t === null) throw new Error('');
+        await call('age_mod_check', { p_request: q.request_id, p_ok: false, p_note: t });
+      }));
+    if (lvl >= 2) row.append(
+      run('Annehmen', async () => {
+        if (!await confirmDialog(`@${q.username} als geprüft annehmen?`, 'Annehmen')) throw new Error('');
+        await call('age_decide', { p_request: q.request_id, p_ok: true });
+      }, ''),
+      run('Ablehnen', async () => {
+        const t = await ask('Ablehnen', 'Grund (sieht die Person)');
+        if (!t) throw new Error('');
+        await call('age_decide', { p_request: q.request_id, p_ok: false, p_reason: t });
+      }, 'danger'));
+    d.append(row);
+    out.push(d);
+  }
+
+  if (lvl >= 2) {
+    out.push(el('h3', { style: 'margin:16px 0 6px' }, 'Alle Nutzer'));
+    for (const u of users) {
+      const d = el('div', { class: 'list-row wrap' });
+      const lab = el('span', { class: 'grow' });
+      lab.innerHTML = `<strong>${esc(u.display_name || u.username)}</strong> <span class="muted small">@${esc(u.username)}</span>
+        ${u.verified ? '<span class="status status-aktiv">geprüft</span>' : '<span class="status status-widerrufen">gesperrt</span>'}
+        ${u.too_young ? '<span class="status status-abgelaufen">unter 14</span>' : ''}${u.is_guardian ? ' <span class="muted small">👪 Elternteil</span>' : ''}
+        <span class="muted small">${u.birth_date ? '· ' + esc(new Date(u.birth_date).toLocaleDateString('de-DE')) : ''}</span>`;
+      d.append(lab);
+      if (u.user_id !== state.me.id && !u.owner_auto) {
+        d.append(run(u.verified ? 'Wieder sperren' : 'Als geprüft markieren', async () => {
+          if (!await confirmDialog(`@${u.username} ${u.verified ? 'wieder sperren' : 'als geprüft markieren'}?`, 'Ja')) throw new Error('');
+          await call('age_set_verified', { p_user: u.user_id, p_value: !u.verified });
+        }));
+      }
+      d.append(run('Geburtsdatum ändern', async () => {
+        const t = await ask('Geburtsdatum ändern', 'Neues Datum (TT.MM.JJJJ)');
+        if (!t) throw new Error('');
+        const m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+        if (!m) throw new Error('Bitte so schreiben: 24.12.2012');
+        const iso = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        await call('age_set_birth', { p_user: u.user_id, p_birth: iso });
+      }));
+      if (lvl >= 3) {
+        d.append(run(u.is_guardian ? 'Kein Elternteil mehr' : 'Elternteil', () => call('age_set_guardian', { p_user: u.user_id, p_value: !u.is_guardian })));
+        if (u.birth_date || u.has_photo) d.append(run('Fotos & Datum löschen', async () => {
+          if (!await confirmDialog(`Alle Ausweis-Fotos und das Geburtsdatum von @${u.username} für immer löschen?`, 'Löschen')) throw new Error('');
+          await call('age_owner_delete', { p_user: u.user_id });
+        }, 'danger'));
+      }
+      out.push(d);
+    }
+  }
+  box.replaceChildren(...out);
 }

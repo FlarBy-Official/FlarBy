@@ -94,3 +94,15 @@ Prüfe mit einem zweiten, eingeloggten Nutzer. Beispiel in der Browser-Konsole m
 - [ ] Neue Nachrichten erscheinen sofort beim anderen Nutzer (Echtzeit).
 - [ ] App-PIN sperrt die App nach dem Neustart.
 - [ ] `/clear` fragt nach und löscht dann alle Nachrichten für alle. Normale Mitglieder bekommen eine Fehlermeldung.
+
+## Altersverifizierung
+- [ ] Nach Migration 032 sind alle außer Owner gesperrt: Beim Login erscheint nur das Formular „Alter bestätigen“.
+- [ ] Owner kommt direkt in die App und sieht „🎂 Alterprüfung“.
+- [ ] Geburtsdatum unter 14: Meldung „zu jung“, keine Anfrage in der Warteschlange.
+- [ ] Mit Ausweis-Foto: Anfrage erscheint beim Team, „Foto ansehen“ zeigt das Bild, der Blick steht im Protokoll.
+- [ ] Mod: „Vorprüfung OK“, Admin/Owner: „Annehmen“. Danach kommt die Person automatisch in die App.
+- [ ] „Ablehnen“ braucht einen Grund, die Person sieht ihn und kann neu einreichen. Das Geburtsdatum ist dann nicht mehr änderbar.
+- [ ] Niemand kann sich selbst prüfen (eigene Anfrage fehlt in der Liste).
+- [ ] Owner setzt bei einer Person „Elternteil“. Ein Kind wählt „Ein Elternteil bürgt“, das Elternteil bestätigt im Menü „Bürgen-Anfragen“ (max. 3 Kinder), danach prüft das Team.
+- [ ] Admin: „Als geprüft markieren“ und „Wieder sperren“ funktionieren. Owner: „Fotos & Datum löschen“.
+- [ ] Ungeprüfter Nutzer: `select` auf `messages` und `chat_overview` liefert nichts, `insert` in `messages` schlägt fehl.

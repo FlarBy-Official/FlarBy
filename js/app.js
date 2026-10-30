@@ -3,6 +3,7 @@ import { renderAuth, forcePasswordChange } from './auth.js';
 import { mountChatList, setActiveChat, refreshChatList, refreshSoon, openNewChat } from './chatlist.js';
 import { mountChat, openChat, closeChat } from './chat.js';
 import { initPinLock } from './pinlock.js';
+import { ensureAge, loadAgeState, openGuardianRequests } from './features/age.js';
 
 const app = document.getElementById('app');
 let enteredFor = null;
@@ -58,6 +59,9 @@ async function start() {
     if (!ok) { enteredFor = null; await sb.auth.signOut(); return showAuth(); }
     prof.agb_accepted_at = new Date().toISOString();
   }
+  let age = await loadAgeState();
+  if (!age.verified) age = await ensureAge(app, age);
+  state.age = age;
   buildMain();
   showAvatarNotice();
   showAnnouncement();
@@ -159,7 +163,8 @@ function dashboardBar() {
   const safe = fn => async () => { try { await fn(); } catch (e) { toast('Nicht verfügbar: ' + (e.message || e)); } };
   return el('div', { class: 'dashbar' },
     role === 'owner'
-      ? el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Panel')
+      ? [el('button', { class: 'btn dark', onclick: safe(async () => (await import('./admin.js')).openAdmin()) }, '🔐 Admin-Panel'),
+        el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openAgeReview()) }, '🎂 Alterprüfung')]
       : el('button', { class: 'btn', onclick: safe(async () => (await import('./features/team.js')).openTeamPanel()) }, '🛡 Team-Bereich'));
 }
 
@@ -172,7 +177,11 @@ function toggleMenu(sidebar) {
     const s = await import('./features/settings.js');
     s.applyTheme(s.isDark() ? 'light' : 'dark');
   }]);
-  if (role === 'owner') items.push(['🔐 Admin-Panel', () => import('./admin.js').then(m => m.openAdmin())]);
+  if (state.age?.is_guardian) items.push(['👪 Bürgen-Anfragen', () => openGuardianRequests()]);
+  if (role === 'owner') {
+    items.push(['🔐 Admin-Panel', () => import('./admin.js').then(m => m.openAdmin())]);
+    items.push(['🎂 Alterprüfung', async () => (await import('./features/team.js')).openAgeReview()]);
+  }
   else if (['moderator', 'admin'].includes(role)) {
     items.push(['🛡 Team-Bereich', async () => (await import('./features/team.js')).openTeamPanel()]);
   }

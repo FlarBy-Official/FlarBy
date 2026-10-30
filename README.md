@@ -15,6 +15,7 @@ Die ganze Oberfläche ist auf Deutsch. Es gibt einen Hell- und einen Dunkelmodus
 - Registrierung nur mit Code (keine offene Anmeldung)
 - Nachrichten melden, Team-Bereich für Moderation
 - Verwarnen, Stummschalten, Sperren
+- Altersverifizierung ab 14 (Ausweis-Foto oder Elternteil bürgt, Prüfung durch das Team)
 - Freiwillige App-PIN als Sperre auf dem Gerät
 - „Passwort vergessen“ mit Wiederherstellungscode oder Ticket
 - Support-Tickets: `/ticket` tippen, Grund angeben, Chat mit dem ganzen Team

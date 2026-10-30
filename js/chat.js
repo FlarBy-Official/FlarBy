@@ -133,41 +133,29 @@ export async function openChat(chatId) {
   c.pinBar = pinBar;
   pane.replaceChildren(head, pinBar, msgsEl, composer);
 
-  function updateMentions() {
-    if (/^\/[a-z]*$/i.test(ta.value) && !c.editing) {
-      const q = ta.value.slice(1).toLowerCase();
-      const cmds = [];
-      if ('ticket'.startsWith(q)) cmds.push(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
-        mentionBox.classList.add('hidden');
-        runTicketCommand();
-      } }, '🎫 /ticket · Support-Ticket öffnen'));
-      if ('clear'.startsWith(q) && c.meta?.type !== 'ticket') cmds.push(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
-        mentionBox.classList.add('hidden');
-        runClearCommand();
-      } }, '🧹 /clear · Alle Nachrichten für immer löschen'));
-      if (c.meta?.type === 'channel' && 'react'.startsWith(q)) cmds.push(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
-        ta.value = ' /React';
-        ta.setSelectionRange(0, 0);
-        mentionBox.classList.add('hidden');
-        saveDraft();
-        ta.focus();
-      } }, '😀 /React · Alle dürfen auf diese Nachricht reagieren'));
-      if (cmds.length) { mentionBox.classList.remove('hidden'); mentionBox.replaceChildren(...cmds); return; }
+  // TAB-Auswahl: cyc merkt sich Liste, aktuellen Eintrag und den ersetzten Bereich im Textfeld.
+  let cyc = null;
+  const hideBox = () => mentionBox.classList.add('hidden');
+
+  function listItems() {
+    const items = [];
+    const whole = /^\/([a-z]*)$/i.exec(ta.value);
+    if (whole && !c.editing) {
+      const q = whole[1].toLowerCase();
+      const cmd = (name, label, run, text = '/' + name) => items.push({ label, run, text, from: 0, to: ta.value.length });
+      if ('ticket'.startsWith(q)) cmd('ticket', '🎫 /ticket · Support-Ticket öffnen', runTicketCommand);
+      if ('clear'.startsWith(q) && c.meta?.type !== 'ticket') cmd('clear', '🧹 /clear · Alle Nachrichten für immer löschen', runClearCommand);
+      if (c.meta?.type === 'channel' && 'react'.startsWith(q)) cmd('react', '😀 /React · Alle dürfen auf diese Nachricht reagieren', null, ' /React');
+      if (items.length) return items;
     }
     const rm = c.meta?.type === 'channel' && !c.editing ? /(^|\s)\/([a-z]*)$/i.exec(ta.value) : null;
     if (rm && 'react'.startsWith(rm[2].toLowerCase())) {
-      mentionBox.classList.remove('hidden');
-      mentionBox.replaceChildren(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
-        ta.value = ta.value.slice(0, rm.index + rm[1].length) + '/React';
-        mentionBox.classList.add('hidden');
-        saveDraft();
-        ta.focus();
-      } }, '😀 /React · Alle dürfen auf diese Nachricht reagieren'));
-      return;
+      const from = rm.index + rm[1].length;
+      return [{ label: '😀 /React · Alle dürfen auf diese Nachricht reagieren', text: '/React', from, to: ta.value.length }];
     }
     const pos = ta.selectionStart ?? ta.value.length;
     const m = /(^|\s)@([\p{L}\p{N}_]*)$/u.exec(ta.value.slice(0, pos));
-    if (!m) { mentionBox.classList.add('hidden'); return; }
+    if (!m) return [];
     const q = m[2].toLowerCase();
     const cands = [];
     for (const id of c.members.keys()) {
@@ -177,18 +165,52 @@ export async function openChat(chatId) {
     if (c.canMentionRoles) cands.push({ tag: 'everyone', label: 'Alle im Chat', icon: '📣' });
     if (c.canMentionRoles) for (const r of c.roleList || []) cands.push({ tag: r.name.toLowerCase().replace(/\s+/g, ''), label: 'Rolle', icon: '🏷' });
     const hits = cands.filter(x => x.tag.toLowerCase().startsWith(q)).sort((a, b) => a.tag.localeCompare(b.tag, 'de')).slice(0, 8);
-    if (!hits.length) { mentionBox.classList.add('hidden'); return; }
-    mentionBox.classList.remove('hidden');
-    mentionBox.replaceChildren(...hits.map(h => el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
-      const start = pos - q.length - 1;
-      ta.value = ta.value.slice(0, start) + '@' + h.tag + ' ' + ta.value.slice(pos);
-      const np = start + h.tag.length + 2;
-      ta.setSelectionRange(np, np);
-      mentionBox.classList.add('hidden');
-      ta.focus();
-    } }, `${h.icon} @${h.tag}` + (h.label ? ` · ${h.label}` : ''))));
+    const from = pos - q.length - 1;
+    return hits.map(h => ({ label: `${h.icon} @${h.tag}` + (h.label ? ` · ${h.label}` : ''), text: '@' + h.tag + ' ', from, to: pos }));
   }
-  ta.addEventListener('keyup', e => { if (!['Enter'].includes(e.key)) updateMentions(); });
+
+  function renderBox(items, active = -1) {
+    if (!items.length) { hideBox(); return; }
+    mentionBox.classList.remove('hidden');
+    mentionBox.replaceChildren(...items.map((it, i) => el('button', { type: 'button', class: i === active ? 'active' : '', onmousedown: e => e.preventDefault(), onclick: () => {
+      hideBox();
+      if (it.run) { it.run(); return; }
+      applyItem(it);
+      saveDraft();
+      ta.focus();
+    } }, it.label)));
+  }
+
+  function applyItem(it) {
+    ta.value = ta.value.slice(0, it.from) + it.text + ta.value.slice(it.to);
+    const caret = it.text === ' /React' ? 0 : it.from + it.text.length;
+    ta.setSelectionRange(caret, caret);
+  }
+
+  function updateMentions() {
+    cyc = null;
+    renderBox(listItems());
+  }
+
+  function tabSelect() {
+    if (cyc && ta.value !== cyc.value) cyc = null;
+    if (!cyc) {
+      const items = listItems();
+      if (!items.length || mentionBox.classList.contains('hidden')) return false;
+      cyc = { items, idx: -1, from: items[0].from, to: items[0].to };
+    }
+    cyc.idx = (cyc.idx + 1) % cyc.items.length;
+    const it = cyc.items[cyc.idx];
+    const cur = { ...it, from: cyc.from, to: cyc.to };
+    applyItem(cur);
+    cyc.to = cyc.from + it.text.length;
+    cyc.value = ta.value;
+    ta.style.height = 'auto';
+    saveDraft();
+    renderBox(cyc.items, cyc.idx);
+    return true;
+  }
+  ta.addEventListener('keyup', e => { if (!['Enter', 'Tab', 'Shift'].includes(e.key) && !(cyc && e.key === 'Control')) updateMentions(); });
   ta.addEventListener('click', updateMentions);
   ta.addEventListener('input', () => {
     saveDraft();
@@ -201,6 +223,7 @@ export async function openChat(chatId) {
     }
   });
   ta.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && tabSelect()) { e.preventDefault(); return; }
     if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(hover: hover)').matches) { e.preventDefault(); send(); }
   });
   sendBtn.addEventListener('click', send);

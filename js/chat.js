@@ -147,6 +147,17 @@ export async function openChat(chatId) {
       } }, '🧹 /clear · Alle Nachrichten für immer löschen'));
       if (cmds.length) { mentionBox.classList.remove('hidden'); mentionBox.replaceChildren(...cmds); return; }
     }
+    const rm = c.meta?.type === 'channel' && !c.editing ? /(^|\s)\/([a-z]*)$/i.exec(ta.value) : null;
+    if (rm && 'react'.startsWith(rm[2].toLowerCase())) {
+      mentionBox.classList.remove('hidden');
+      mentionBox.replaceChildren(el('button', { type: 'button', onmousedown: e => e.preventDefault(), onclick: () => {
+        ta.value = ta.value.slice(0, rm.index + rm[1].length) + '/React';
+        mentionBox.classList.add('hidden');
+        saveDraft();
+        ta.focus();
+      } }, '😀 /React · Alle dürfen auf diese Nachricht reagieren'));
+      return;
+    }
     const pos = ta.selectionStart ?? ta.value.length;
     const m = /(^|\s)@([\p{L}\p{N}_]*)$/u.exec(ta.value.slice(0, pos));
     if (!m) { mentionBox.classList.add('hidden'); return; }

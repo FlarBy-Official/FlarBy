@@ -4,10 +4,10 @@ export const MIN_AGE = 14;
 
 // Platzhalter: Der endgültige Text kommt vom Besitzer.
 const PRIVACY_TEXT = [
-  'Wir prüfen dein Alter. Dafür speichern wir dein Geburtsdatum und, wenn du es hochlädst, das Foto von deinem Ausweis.',
-  'Nur das Team (Moderatoren, Admins, Owner) kann beides sehen. Jeder Blick auf ein Foto wird im Protokoll gespeichert.',
-  'Die Daten bleiben gespeichert. Nur der Owner kann sie löschen.',
-  'Bitte decke auf dem Ausweis alles ab außer Name, Geburtsdatum und Foto.',
+  ' ',
+  ' ',
+  ' ',
+  ' ',
 ];
 
 const SETUP_MISSING = /age_my_state|schema cache|does not exist/i;

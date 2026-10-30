@@ -14,7 +14,14 @@
 </style>
 </head>
 <body>
-<p><a href="./">← Zurück zu FlarChat</a></p>
+<p><a href="./" id="back">← Zurück zu FlarChat</a></p>
+<script>
+document.getElementById('back').addEventListener('click', function (e) {
+  e.preventDefault();
+  window.close();
+  setTimeout(function () { if (history.length > 1) history.back(); else location.href = './'; }, 150);
+});
+</script>
 <h1>ALLGEMEINE GESCHÄFTSBEDINGUNGEN (AGB), DATENSCHUTZERKLÄRUNG UND IMPRESSUM</h1>
 
 <h2>TEIL A: IMPRESSUM UND ANBIETERKENNZEICHNUNG</h2>

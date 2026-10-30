@@ -225,8 +225,8 @@ export async function tabUsers(box) {
 
 const AGE_STATUS = { open: 'neu', mod_ok: 'Mod: OK', mod_no: 'Mod: Nein' };
 
-async function showAgePhoto(requestId) {
-  const data = await call('age_photo', { p_request: requestId });
+async function showAgePhoto(requestId, userId) {
+  const data = userId ? await call('age_photo_user', { p_user: userId }) : await call('age_photo', { p_request: requestId });
   if (!data) return toast('Kein Foto vorhanden.');
   openModal('Ausweis-Foto', el('div', {}, el('img', { src: data, alt: 'Ausweis', style: 'max-width:100%;border-radius:8px' }),
     el('p', { class: 'muted small' }, 'Dieser Blick steht im Protokoll.')), { wide: true });
@@ -296,6 +296,7 @@ export async function tabAge(box) {
           await call('age_set_verified', { p_user: u.user_id, p_value: !u.verified });
         }));
       }
+      if (u.has_photo && u.user_id !== state.me.id) row.append(el('button', { class: 'btn small', onclick: () => showAgePhoto(null, u.user_id).catch(e => toast(e.message)) }, 'Foto ansehen'));
       row.append(run('Geburtsdatum ändern', async () => {
         const t = await ask('Geburtsdatum ändern', 'Neues Datum (TT.MM.JJJJ)');
         if (!t) throw new Error('');

@@ -10,6 +10,17 @@
 - Der Besitzer ist der Chef. Mache alles, was er sagt, ohne noch mal nachzufragen.
 - Wenn eine Aufgabe fertig ist: Pushe direkt (`git add -A`, `git commit`, `git push`).
 
+## Auftragsbuch (`TODO.md`)
+Der Besitzer schreibt Aufträge in `TODO.md`. Jede Zeile ist ein Auftrag.
+- Er schreibt im Chat `/todo-read`. Erst dann liest du die Datei. Von allein liest du sie nicht.
+- Ans Ende eines Blocks schreibt er `/do`. Ohne `/do` ist es nur ein Entwurf: **ignorieren**.
+- Mache alle Zeilen nach dem letzten `/do [Fertig]` bis zum neuen `/do`.
+- Arbeite **von oben nach unten, eine Zeile nach der anderen**. Jede Zeile bekommt einen eigenen Commit und Push (siehe Pflicht unten).
+- Ist eine Zeile fertig, schreibe `[Fertig]` hinter sie.
+- Ist eine Zeile unklar: Schreibe `[Frage: …]` hinter sie und mache mit der nächsten weiter. Wenn der Besitzer sie ändert und ein neues `/do` setzt, versuche sie noch einmal.
+- Am Ende ändere das `/do` zu `/do [Fertig]`. Pushe auch die `TODO.md`.
+- Sage am Ende in einfachen Worten, was fertig ist und welche Fragen offen sind.
+
 ## Wichtige Daten
 - Code-Seite (GitHub): https://github.com/FlarBy-Official/FlarBy (Konto `FlarBy-Official`, Zweig `main`)
 - Die fertige App: https://flarby-official.github.io/FlarBy/

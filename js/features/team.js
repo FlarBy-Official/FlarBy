@@ -294,12 +294,12 @@ export async function tabAge(box) {
   out.push(card('Warteschlange', queue.length, queueBox));
 
   if (lvl >= 2) {
-    const badge = (txt, cls) => el('span', { class: 'badge ' + cls }, el('i', {}), txt);
+    const badge = (txt, cls) => el('span', { class: 'tag ' + cls }, el('i', {}), txt);
     const rows = users.map(u => {
       const badges = el('td', {}, u.verified ? badge('Geprüft', 'ok') : badge('Gesperrt', 'bad'), u.too_young ? badge('Unter 14', 'warn') : null, u.is_guardian ? badge('Elternteil', 'neutral') : null);
       const items = [];
       const item = (label, fn, danger) => {
-        const b = el('button', { class: 'menu-item' + (danger ? ' danger' : ''), onclick: async e => {
+        const b = el('button', { class: 'act-item' + (danger ? ' danger' : ''), onclick: async e => {
           e.currentTarget.closest('details').open = false;
           try { await fn(); toast('Gespeichert.'); reload(); } catch (err) { if (err.message) toast(err.message); }
         } });
@@ -326,8 +326,8 @@ export async function tabAge(box) {
           await call('age_owner_delete', { p_user: u.user_id });
         }, true);
       }
-      const sum = el('summary', { 'aria-label': 'Aktionen' }, '⋮'), list = el('div', { class: 'menu-list' }, ...items);
-      const menu = el('details', { class: 'menu' }, sum, list);
+      const sum = el('summary', { 'aria-label': 'Aktionen' }, '⋮'), list = el('div', { class: 'act-list' }, ...items);
+      const menu = el('details', { class: 'act' }, sum, list);
       // fixed, damit die Tabelle das Menü nicht abschneidet
       menu.addEventListener('toggle', () => {
         if (!menu.open) return;
@@ -336,7 +336,7 @@ export async function tabAge(box) {
         list.style.right = (innerWidth - r.right) + 'px';
       });
       const name = el('td', {});
-      name.innerHTML = `<div class="who"><span class="ini">${esc((u.display_name || u.username).slice(0, 2).toUpperCase())}</span><div><strong>${esc(u.display_name || u.username)}</strong><div class="muted small">@${esc(u.username)}</div></div></div>`;
+      name.innerHTML = `<div class="u-who"><span class="ini">${esc((u.display_name || u.username).slice(0, 2).toUpperCase())}</span><div><strong>${esc(u.display_name || u.username)}</strong><div class="muted small">@${esc(u.username)}</div></div></div>`;
       return el('tr', {}, name, badges, el('td', { class: 'muted' }, u.birth_date ? new Date(u.birth_date).toLocaleDateString('de-DE') : '–'), el('td', { class: 'right' }, menu));
     });
     const body = el('tbody', {}, rows);

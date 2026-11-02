@@ -29,3 +29,5 @@ bitte mache 3., 4. [Fertig]
 Danke [Fertig] (kein Auftrag)
 /do [Fertig]
 
+Ab jetzt nenne ich dich "Alva" bitte in Agents.md speichern [Fertig]
+/do [Fertig]

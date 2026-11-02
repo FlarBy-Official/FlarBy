@@ -41,18 +41,28 @@ async function init() {
   mainScreen();
 }
 
+const NAV = [
+  [null, [['quick', '⚡ Schnell']]],
+  ['Verwalten', [['users', 'Nutzer'], ['chats', 'Chats'], ['announce', 'Ansage'], ['age', 'Alter'], ['codes', 'Codes'], ['words', 'Wörter']]],
+  ['Hilfe', [['reports', 'Meldungen'], ['tickets', 'Tickets'], ['support', 'Support']]],
+  ['Überblick', [['stats', 'Statistik'], ['activity', 'Aktivität'], ['errors', 'Fehler'], ['audit', 'Audit-Log']]],
+];
+
 function mainScreen() {
   const view = el('div', { class: 'admin-view' });
-  const tabs = el('div', { class: 'tabs' });
-  screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
+  const nav = el('nav', { class: 'adm-nav' });
+  const title = el('h2', { class: 'adm-title' });
+  const back = overlay ? el('button', { class: 'adm-back', onclick: closeAdmin }, '← Zurück') : el('a', { class: 'adm-back', href: './' }, '← Zur App');
+  root?.replaceChildren(banner(), el('div', { class: 'adm-layout' }, el('aside', { class: 'adm-side' }, el('div', { class: 'adm-brand' }, 'FlarChat Admin'), nav, back),
+    el('main', { class: 'adm-main' }, title, view)));
+  let queueCount = 0;
+  call('age_queue').then(q => { queueCount = (q || []).length; if (queueCount) nav.querySelector('[data-k=age]')?.append(el('span', { class: 'adm-count' }, String(queueCount))); }).catch(() => {});
 
   const show = id => {
-    const main = [['quick', '⚡ Schnell'], ['users', 'Nutzer'], ['chats', 'Chats'], ['announce', 'Ansage'], ['reports', 'Meldungen'], ['tickets', 'Tickets']];
-    const more = [['stats', 'Statistik'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['words', 'Wörter'], ['support', 'Support'], ['age', 'Alter'], ['errors', 'Fehler'], ['audit', 'Audit-Log']];
-    const tabBtn = ([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l);
-    tabs.replaceChildren(...main.map(tabBtn),
-      el('details', { class: 'tabs-more', open: more.some(([k]) => k === id) },
-        el('summary', { class: 'tab' }, 'Mehr ▾'), el('div', { class: 'tabs' }, ...more.map(tabBtn))));
+    nav.replaceChildren(...NAV.map(([group, items]) => el('div', { class: 'adm-group' },
+      group ? el('p', { class: 'adm-label' }, group) : null,
+      ...items.map(([k, l]) => el('button', { class: 'adm-item' + (k === id ? ' active' : ''), 'data-k': k, onclick: () => show(k) }, l, k === 'age' && queueCount ? el('span', { class: 'adm-count' }, String(queueCount)) : null)))));
+    title.textContent = NAV.flatMap(g => g[1]).find(([k]) => k === id)[1].replace('⚡ ', '');
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
       if (id === 'quick') return quickView(view, show);

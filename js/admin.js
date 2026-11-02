@@ -41,19 +41,22 @@ async function init() {
 }
 
 const NAV = [
-  [null, [['quick', '⚡ Schnell']]],
-  ['Verwalten', [['users', 'Nutzer'], ['chats', 'Chats'], ['announce', 'Ansage'], ['age', 'Alter'], ['codes', 'Codes'], ['words', 'Wörter']]],
-  ['Hilfe', [['reports', 'Meldungen'], ['tickets', 'Tickets'], ['support', 'Support']]],
-  ['Überblick', [['stats', 'Statistik'], ['activity', 'Aktivität'], ['errors', 'Fehler'], ['audit', 'Audit-Log']]],
+  [null, [['quick', '⚡ Schnell', 'Die wichtigsten Aktionen auf einen Blick.']]],
+  ['Verwalten', [['users', 'Nutzer', 'Nutzer sperren, stumm schalten und Rollen vergeben.'], ['chats', 'Chats', 'Chats lesen, exportieren und Systemnachrichten senden.'], ['announce', 'Ansage', 'Eine Ansage an alle schreiben.'], ['age', 'Alter', 'Alter prüfen und Nutzer verwalten.'], ['codes', 'Codes', 'Einladungs-Codes verwalten.'], ['words', 'Wörter', 'Gesperrte Wörter verwalten.']]],
+  ['Hilfe', [['reports', 'Meldungen', 'Gemeldete Nachrichten und Profile.'], ['tickets', 'Tickets', 'Offene Anfragen bearbeiten.'], ['support', 'Support', 'Support-Tickets der Nutzer.']]],
+  ['Überblick', [['stats', 'Statistik', 'Zahlen zur App.'], ['activity', 'Aktivität', 'Wer ist gerade online?'], ['errors', 'Fehler', 'Gemeldete Fehler der App.'], ['audit', 'Audit-Log', 'Protokoll aller Admin-Aktionen.']]],
 ];
 
 function mainScreen() {
   const view = el('div', { class: 'admin-view' });
   const nav = el('nav', { class: 'adm-nav' });
-  const title = el('h2', { class: 'adm-title' });
+  const title = el('h1', { class: 'adm-title' });
+  const subtitle = el('p', { class: 'adm-subtitle' });
+  const head = el('header', { class: 'adm-head' }, el('div', {}, title, subtitle));
   const back = overlay ? el('button', { class: 'adm-back', onclick: closeAdmin }, '← Zurück') : el('a', { class: 'adm-back', href: './' }, '← Zur App');
-  root?.replaceChildren(banner(), el('div', { class: 'adm-layout' }, el('aside', { class: 'adm-side' }, el('div', { class: 'adm-brand' }, 'FlarChat Admin'), nav, back),
-    el('main', { class: 'adm-main' }, title, view)));
+  root?.replaceChildren(el('div', { class: 'adm-layout' },
+    el('aside', { class: 'adm-side' }, el('div', { class: 'adm-brand' }, 'FlarChat Admin'), nav, el('div', { class: 'adm-foot' }, back)),
+    el('div', { class: 'adm-col' }, banner(), el('main', { class: 'adm-main' }, head, view))));
   let queueCount = 0;
   call('age_queue').then(q => { queueCount = (q || []).length; if (queueCount) nav.querySelector('[data-k=age]')?.append(el('span', { class: 'adm-count' }, String(queueCount))); }).catch(() => {});
 
@@ -61,7 +64,10 @@ function mainScreen() {
     nav.replaceChildren(...NAV.map(([group, items]) => el('div', { class: 'adm-group' },
       group ? el('p', { class: 'adm-label' }, group) : null,
       ...items.map(([k, l]) => el('button', { class: 'adm-item' + (k === id ? ' active' : ''), 'data-k': k, onclick: () => show(k) }, l, k === 'age' && queueCount ? el('span', { class: 'adm-count' }, String(queueCount)) : null)))));
-    title.textContent = NAV.flatMap(g => g[1]).find(([k]) => k === id)[1].replace('⚡ ', '');
+    const cur = NAV.flatMap(g => g[1]).find(([k]) => k === id);
+    title.textContent = cur[1].replace('⚡ ', '');
+    subtitle.textContent = cur[2];
+    head.replaceChildren(head.firstChild);
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
       if (id === 'quick') return quickView(view, show);

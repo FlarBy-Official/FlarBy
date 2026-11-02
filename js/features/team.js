@@ -345,7 +345,7 @@ export async function tabAge(box) {
       const q = search.value.trim().toLowerCase();
       rows.forEach(r => { r.hidden = !!q && !r.textContent.toLowerCase().includes(q); });
     });
-    out.unshift(el('div', { class: 'adm-sub' }, el('p', { class: 'muted' }, 'Alter prüfen und Nutzer verwalten.'), search));
+    (box.closest('.adm-main')?.querySelector('.adm-head') || box).append(search);
     out.push(card('Alle Nutzer', users.length, el('div', { class: 'table-scroll' }, el('table', { class: 'data-table' },
       el('thead', {}, el('tr', {}, ['Nutzer', 'Status', 'Geburtsdatum', ''].map(h => el('th', {}, h)))), body))));
   }

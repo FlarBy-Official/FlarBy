@@ -2,6 +2,7 @@ import { sb, state, el, nameHtml, toast, call, openModal, KONTO_NR, knownKonten 
 import { renderAuth, forcePasswordChange } from './auth.js';
 import { mountChatList, setActiveChat, refreshChatList, refreshSoon, openNewChat } from './chatlist.js';
 import { mountChat, openChat, closeChat } from './chat.js';
+import './features/background.js';
 import { initPinLock } from './pinlock.js';
 import { ensureAge, loadAgeState, openGuardianRequests } from './features/age.js';
 

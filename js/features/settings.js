@@ -1,5 +1,6 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, closeModal, confirmDialog, STATUS } from '../core.js';
 import { avatarEditor } from '../avatar.js';
+import { backgroundSettings } from './background.js';
 import { hasPin, setPin, removePin } from '../pinlock.js';
 
 export function applyTheme(mode) {
@@ -86,6 +87,8 @@ export function openSettings() {
       onChange: v => { if (state.pub) state.pub.avatar_url = v; window.dispatchEvent(new CustomEvent('flarchat:avatar-changed')); },
     }));
   }).catch(e => avBox.replaceChildren(el('span', { class: 'error' }, e.message)));
+
+  root.append(section('Chat-Hintergrund', backgroundSettings()));
 
   // Sichtbarkeit
   const vis = [];

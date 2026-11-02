@@ -1,5 +1,6 @@
 import { sb, state, el, esc, nameHtml, toast, call, openModal, confirmDialog, richNodes, statusLabel, hasReactMarker, stripReact, moveReactToEnd } from './core.js';
 import { openMention } from './features/mentions.js';
+import { createGame } from './features/game.js';
 import { uploadImage, signedUrl } from './media.js';
 import { createVoiceRecorder, uploadVoice, isVoicePath, voicePlayer } from './features/voice.js';
 import { fillAvatar, avatarEl } from './avatar.js';
@@ -41,6 +42,7 @@ export function closeChat() {
 
 function teardown() {
   if (cur) {
+    cur.game?.destroy();
     if (cur.channel) sb.removeChannel(cur.channel);
     clearInterval(cur.tick);
     cur.dead = true;
@@ -129,10 +131,11 @@ export async function openChat(chatId) {
   const sendBtn = el('button', { class: 'icon-btn send', 'aria-label': 'Senden' }, '➤');
   const mentionBox = el('div', { class: 'mention-box hidden' });
   const voice = createVoiceRecorder(async blob => { await insertMessage({ body: '', media_path: await uploadVoice(chatId, blob) }); });
+  const gameBtn = el('button', { class: 'icon-btn hidden', 'aria-label': 'Tic-Tac-Toe spielen', title: 'Tic-Tac-Toe spielen', onclick: () => (c.game ||= makeGame())?.invite() }, '🎮');
   const pollBtn = el('button', { class: 'icon-btn', 'aria-label': 'Umfrage erstellen', onclick: () => openPollForm() }, '📊');
   const composerRow = el('div', { class: 'composer' },
     el('button', { class: 'icon-btn', 'aria-label': 'Bild senden', onclick: () => file.click() }, '📎'),
-    voice.btn, pollBtn, file, ta, sendBtn);
+    voice.btn, pollBtn, gameBtn, file, ta, sendBtn);
   const closedBar = el('div', { class: 'ticket-closed hidden' });
   const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar, voice.bar, composerRow, closedBar);
   const pinBar = el('div', { class: 'pin-bar hidden' });
@@ -282,6 +285,7 @@ export async function openChat(chatId) {
 
   // Ticket-Chat: keine Umfragen/Sprachnachrichten; geschlossen = nur lesen
   async function applyTicketState() {
+    gameBtn.classList.toggle('hidden', c.meta?.type !== 'direct');
     if (c.meta?.type === 'channel') {
       const staff = isStaffWriter();
       pollBtn.classList.toggle('hidden', !staff);
@@ -560,6 +564,11 @@ export async function openChat(chatId) {
 
   function nearBottom() { return msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 140; }
 
+  function makeGame() {
+    if (c.meta?.type !== 'direct' || !c.peer) return null;
+    return createGame({ getChannel: () => c.channel, myId: state.me.id, peerId: c.peer.id, peerName: c.peer.display_name || c.peer.username });
+  }
+
   function subscribe() {
     const ch = sb.channel('chat:' + chatId, { config: { presence: { key: state.me.id }, broadcast: { self: false } } });
     c.channel = ch;
@@ -567,6 +576,9 @@ export async function openChat(chatId) {
       if (!payload || payload.user_id === state.me.id) return;
       c.typing.set(payload.user_id, Date.now());
       loadProfiles([payload.user_id]).then(renderHead);
+    });
+    ch.on('broadcast', { event: 'ttt' }, ({ payload }) => {
+      (c.game ||= makeGame())?.handle(payload);
     });
     ch.on('presence', { event: 'sync' }, () => {
       c.online = new Set(Object.keys(ch.presenceState()));

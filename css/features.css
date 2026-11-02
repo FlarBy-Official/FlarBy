@@ -4,8 +4,8 @@
 .modal.wide{max-width:640px}
 .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border,#ddd)}
 .modal-body{padding:16px;overflow-y:auto}
-.btn{background:var(--red,#FF2800);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
-.btn:hover{background:var(--red-dark,#D40000)}
+.btn{background:var(--btn,#18181b);color:var(--btn-fg,#fff);border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{filter:brightness(.92)}
 .btn.ghost{background:transparent;color:var(--fg,#111);border:1px solid var(--border,#ccc)}
 .btn.ghost:hover{background:rgba(128,128,128,.15)}
 .btn.danger{background:var(--red-dark,#D40000)}
@@ -54,7 +54,7 @@ h4{margin:16px 0 6px}
 .status-abgelaufen{background:#b8860b;color:#fff}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border,#ddd);margin-bottom:10px;flex-wrap:wrap}
 .tab{background:none;border:0;color:inherit;padding:8px 14px;cursor:pointer;font:inherit;border-bottom:3px solid transparent}
-.tab.active{border-bottom-color:var(--red,#FF2800);font-weight:700}
+.tab.active{border-bottom-color:var(--text,#27272a);font-weight:700}
 .ctx-list{margin:10px 0}
 .ctx-msg{padding:6px 8px;border-radius:8px;margin:3px 0;background:rgba(128,128,128,.12)}
 .ctx-msg.flagged{outline:2px solid var(--red,#FF2800)}

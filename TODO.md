@@ -25,3 +25,4 @@ Ideen:
 bitte mache 3., 4. [Fertig]
 (3: Profilbild gab es schon, neu ist der Status-Text. 4: Suche per 🔍 im Chat.)
 /do [Fertig] 
+

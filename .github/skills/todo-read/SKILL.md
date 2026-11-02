@@ -23,5 +23,11 @@ Der Besitzer schreibt Aufträge in `TODO.md` (eine Zeile pro Auftrag) und setzt 
 5. Ist eine Zeile unklar: Schreibe `[Frage: …]` dahinter und mache mit der nächsten weiter.
 6. Am Ende: Ändere `/do` zu `/do [Fertig]` und pushe `TODO.md`.
 
+## Skills in Zeilen
+Steht in einer Zeile ein Skill, führst du ihn selbst aus (Regeln in `AGENTS.md`, Abschnitt „Skills in `TODO.md`“):
+- `/grilling` oder `/grill-me`: Skill `grilling` aufrufen und dem Besitzer sofort die Fragen stellen. `[Fertig]`, wenn alles beantwortet ist.
+- `/diagnosing-bugs`, `/tdd`, `/code-review`: den gleichnamigen Skill mit dem Text der Zeile aufrufen.
+- `/new`: alles pushen, `[Fertig]` setzen, 2–3 Sätze Zusammenfassung unter die Zeile schreiben, dann aufhören und dem Besitzer sagen, dass er `/new` im Terminal tippen soll.
+
 ## Antwort an den Besitzer
 Er ist 11 Jahre alt. Schreibe auf Deutsch, kurz und einfach. Sage, was fertig ist, welche Fragen offen sind und was er noch tun muss. Der Schlüssel `service_role` darf nie in eine Datei oder in den Chat.

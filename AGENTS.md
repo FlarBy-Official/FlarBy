@@ -21,6 +21,13 @@ Der Besitzer schreibt Aufträge in `TODO.md`. Jede Zeile ist ein Auftrag.
 - Am Ende ändere das `/do` zu `/do [Fertig]`. Pushe auch die `TODO.md`.
 - Sage am Ende in einfachen Worten, was fertig ist und welche Fragen offen sind.
 
+## Skills in `TODO.md`
+Der Besitzer darf in einer Zeile einen Skill schreiben, zum Beispiel `/grilling Emoji-Reaktionen`. Du führst den Skill dann selbst aus, wenn du bei der Zeile bist.
+- `/grilling` und `/grill-me` sind dasselbe: Rufe den Skill `grilling` auf und stelle dem Besitzer **sofort** im Chat die Fragen zum Thema. Die Zeile bekommt `[Fertig]`, wenn alle Fragen beantwortet sind.
+- `/diagnosing-bugs`, `/tdd` und `/code-review`: Rufe den gleichnamigen Skill auf, mit dem Text der Zeile als Thema.
+- `/new`: Pushe alles, schreibe `[Fertig]` hinter die Zeile und schreibe unter die Zeile 2–3 Sätze: Was ist schon fertig, was kommt als Nächstes. Höre dann auf. Sage dem Besitzer, dass er im Terminal `/new` tippen soll, um einen frischen Chat zu starten. Alles nach `/new` macht der neue Chat bei `/todo-read`.
+- Andere Skills macht der Besitzer selbst im Chat.
+
 ## Wichtige Daten
 - Code-Seite (GitHub): https://github.com/FlarBy-Official/FlarBy (Konto `FlarBy-Official`, Zweig `main`)
 - Die fertige App: https://flarby-official.github.io/FlarBy/

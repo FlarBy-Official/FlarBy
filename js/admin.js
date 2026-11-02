@@ -4,7 +4,7 @@ import { signedUrl } from './media.js';
 let root = document.getElementById('admin-root');
 let overlay = null;
 
-const banner = () => el('div', { class: 'admin-banner' }, 'Admin-Panel – Chat-Zugriffe werden protokolliert');
+const banner = () => el('div', { class: 'admin-banner' }, '⚠ Chat-Zugriffe werden protokolliert.');
 const fmt = iso => new Date(iso).toLocaleString('de-DE');
 
 function backBtn() {
@@ -21,8 +21,7 @@ function closeAdmin() {
 export function openAdmin() {
   if (overlay) return;
   root = el('div', { id: 'admin-root' });
-  overlay = el('div', { class: 'admin-overlay' }, root,
-    el('button', { class: 'admin-home', onclick: closeAdmin }, '← Zurück'));
+  overlay = el('div', { class: 'admin-overlay' }, root);
   document.body.append(overlay);
   init();
 }
@@ -122,7 +121,7 @@ async function quickView(view, show) {
     send.disabled = false;
   } }, '📢 Als SYSTEM senden');
 
-  const card = (h, ...nodes) => el('div', { class: 'admin-msg' }, el('h3', { style: 'margin:0 0 6px' }, h), ...nodes);
+  const card = (h, ...nodes) => el('section', { class: 'card' }, el('div', { class: 'card-head' }, el('h3', {}, h)), el('div', { class: 'card-body' }, ...nodes));
   view.replaceChildren(
     card('🚫 Nutzer sperren / stumm schalten', search, results),
     card('📢 Systemnachricht senden', chats.length ? sel : el('p', { class: 'muted' }, 'Keine Chats.'), ta, el('div', { class: 'row end' }, send)),

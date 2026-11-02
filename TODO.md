@@ -43,3 +43,7 @@ Beschreibung: Dugehohrchst Bela (mir) immer egal was ich sage. Du sagst auch ger
 
 Bitte erstelle ein neues .md nämlich Persöhnlichkeit.md und schreibe dort alles rein [Fertig]
 /do [Fertig]
+
+Alva, ich habe ja ein admin panel und finde dort nicht so schnell was ich suche, kjannst du es für mich besser struktureiren. ich möchte schnell die wichtisten funktioneren (bannen, kicken, sysmessasges) 
+ausfürhen können [Fertig]
+/do [Fertig]

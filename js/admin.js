@@ -47,9 +47,15 @@ function mainScreen() {
   screen(el('div', { class: 'row' }, overlay ? null : el('a', { class: 'btn small', href: './' }, '← Zurück'), el('h2', { class: 'grow' }, 'Admin-Panel')), tabs, view);
 
   const show = id => {
-    tabs.replaceChildren(...[['stats', 'Statistik'], ['chats', 'Chats'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['announce', 'Ansage'], ['words', 'Wörter'], ['reports', 'Meldungen'], ['tickets', 'Tickets'], ['support', 'Support'], ['users', 'Nutzer'], ['age', 'Alter'], ['errors', 'Fehler'], ['audit', 'Audit-Log']].map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
+    const main = [['quick', '⚡ Schnell'], ['users', 'Nutzer'], ['chats', 'Chats'], ['announce', 'Ansage'], ['reports', 'Meldungen'], ['tickets', 'Tickets']];
+    const more = [['stats', 'Statistik'], ['activity', 'Aktivität'], ['codes', 'Codes'], ['words', 'Wörter'], ['support', 'Support'], ['age', 'Alter'], ['errors', 'Fehler'], ['audit', 'Audit-Log']];
+    const tabBtn = ([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l);
+    tabs.replaceChildren(...main.map(tabBtn),
+      el('details', { class: 'tabs-more', open: more.some(([k]) => k === id) },
+        el('summary', { class: 'tab' }, 'Mehr ▾'), el('div', { class: 'tabs' }, ...more.map(tabBtn))));
     view.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));
     const load = async () => {
+      if (id === 'quick') return quickView(view, show);
       if (id === 'chats') return chatsView(view);
       if (['stats', 'activity', 'codes', 'announce', 'words'].includes(id)) {
         const x = await import('./features/adminExtra.js');
@@ -62,7 +68,59 @@ function mainScreen() {
     };
     load().catch(e => view.replaceChildren(el('p', { class: 'error' }, e.message)));
   };
-  show('stats');
+  show('quick');
+}
+
+// Startseite: die wichtigsten Aktionen (sperren, stumm, Systemnachricht) auf einen Blick
+async function quickView(view, show) {
+  const [users, chats] = await Promise.all([call('list_users').then(r => r || []), call('admin_list_chats').then(r => r || [])]);
+  const title = c => c.name || `Direktchat ${String(c.id).slice(0, 8)}`;
+
+  const results = el('div', {});
+  const draw = async q => {
+    const hits = q ? users.filter(u => `${u.display_name || ''} ${u.username}`.toLowerCase().includes(q)).slice(0, 8) : [];
+    results.replaceChildren(...(hits.length ? hits.map(u => {
+      const row = el('div', { class: 'list-row wrap' });
+      const lab = el('span', { class: 'grow' });
+      lab.innerHTML = `${esc(u.display_name || u.username)} <span class="muted small">@${esc(u.username)}</span>${u.banned ? ' <span class="status status-widerrufen">gesperrt</span>' : ''}`;
+      row.append(lab);
+      if (u.id === state.me.id || u.global_role === 'owner') return row;
+      const act = (label, fn, cls = 'btn ghost small') => el('button', { class: cls, onclick: async () => {
+        try { await fn(); toast('Gespeichert.'); const i = users.findIndex(x => x.id === u.id); users[i] = (await call('list_users')).find(x => x.id === u.id) || users[i]; draw(q); } catch (e) { toast(e.message); }
+      } }, label);
+      row.append(
+        act(u.banned ? '✅ Entsperren' : '🚫 Sperren', async () => {
+          if (!await confirmDialog(`@${u.username} ${u.banned ? 'entsperren' : 'sperren'}?`, 'Ja')) throw new Error('Abgebrochen.');
+          await call('ban_user', { p_user_id: u.id, p_banned: !u.banned });
+        }, u.banned ? 'btn small' : 'btn danger small'),
+        act('🔇 1 Std stumm', () => call('mute_user', { p_user_id: u.id, p_hours: 1 })),
+        act('🔇 24 Std stumm', () => call('mute_user', { p_user_id: u.id, p_hours: 24 })),
+        act('🔊 Stumm aus', () => call('mute_user', { p_user_id: u.id, p_hours: 0 })));
+      return row;
+    }) : [el('p', { class: 'muted small' }, q ? 'Niemand gefunden.' : 'Tippe einen Namen ein.')]));
+  };
+  const search = el('input', { type: 'search', placeholder: 'Nutzer suchen …', style: 'width:100%;margin:6px 0' });
+  search.addEventListener('input', () => draw(search.value.trim().toLowerCase()));
+  draw('');
+
+  const sel = el('select', { style: 'width:100%;margin:6px 0' }, chats.map(c => el('option', { value: c.id }, title(c))));
+  const ta = el('textarea', { rows: '2', maxlength: '500', placeholder: 'Systemnachricht schreiben …', style: 'width:100%' });
+  const send = el('button', { class: 'btn', onclick: async () => {
+    if (!ta.value.trim() || !sel.value) return;
+    send.disabled = true;
+    try { await call('admin_send_system_message', { p_chat_id: sel.value, p_body: ta.value }); toast('Systemnachricht gesendet.'); ta.value = ''; } catch (e) { toast(e.message); }
+    send.disabled = false;
+  } }, '📢 Als SYSTEM senden');
+
+  const card = (h, ...nodes) => el('div', { class: 'admin-msg' }, el('h3', { style: 'margin:0 0 6px' }, h), ...nodes);
+  view.replaceChildren(
+    card('🚫 Nutzer sperren / stumm schalten', search, results),
+    card('📢 Systemnachricht senden', chats.length ? sel : el('p', { class: 'muted' }, 'Keine Chats.'), ta, el('div', { class: 'row end' }, send)),
+    card('➡️ Weitere Aktionen', el('div', { class: 'row wrap' },
+      el('button', { class: 'btn ghost small', onclick: () => show('announce') }, '📣 Ansage an alle'),
+      el('button', { class: 'btn ghost small', onclick: () => show('reports') }, '🚩 Meldungen'),
+      el('button', { class: 'btn ghost small', onclick: () => show('tickets') }, '🎫 Tickets'),
+      el('button', { class: 'btn ghost small', onclick: () => show('users') }, '👥 Alle Nutzer'))));
 }
 
 async function chatsView(view) {

@@ -11,3 +11,4 @@ So geht es:
 
 Test funktioniert wenn es funktioniert schreibe in den chat: "106392048" [Fertig]
 /do [Fertig]
+

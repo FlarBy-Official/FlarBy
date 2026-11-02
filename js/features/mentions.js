@@ -19,6 +19,7 @@ function profileView(p, roleText) {
     name,
     el('div', { class: 'muted' }, roleText),
     statusLabel(p.status) ? el('div', { class: 'status-line' }, statusLabel(p.status)) : null,
+    p.status_text ? el('div', { class: 'status-line' }, '💬 ' + p.status_text) : null,
     p.id !== state.me.id ? el('button', {
       class: 'btn',
       onclick: async () => {

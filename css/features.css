@@ -176,3 +176,10 @@ h4{margin:16px 0 6px}
 .chan-msg .quote{background:rgba(0,0,0,.25);color:#fff;border-radius:6px;padding:3px 6px;margin-bottom:4px;font-size:12px}
 .chan-msg a{color:#fff;text-decoration:underline}
 .mention-box button.active{background:var(--hover,#f0f0f0);font-weight:600}
+
+.search-bar{padding:8px 10px;border-bottom:1px solid var(--line,#ddd)}
+.search-row{display:flex;gap:6px;align-items:center}
+.search-row input{flex:1}
+.search-list{max-height:40vh;overflow:auto}
+.search-hit{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line,#eee);padding:8px 4px;cursor:pointer;color:inherit;font:inherit}
+.search-hit:hover{background:var(--hover,#f0f0f0)}

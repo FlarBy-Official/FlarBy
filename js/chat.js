@@ -97,6 +97,12 @@ export async function openChat(chatId) {
     el('button', { class: 'icon-btn', 'aria-label': 'Videoanruf', title: 'Videoanruf', onclick: startChatCall(true) }, '📹'));
   c.callBtn = callBtn;
   const closeTicketBtn = el('button', { class: 'btn small hidden', onclick: () => closeTicket() }, '🔒 Schließen');
+  const searchBtn = el('button', { class: 'icon-btn', 'aria-label': 'Nachrichten suchen', title: 'Nachrichten suchen', onclick: () => toggleSearch() }, '🔍');
+  const searchInput = el('input', { type: 'search', placeholder: 'In diesem Chat suchen', maxlength: '100' });
+  const searchList = el('div', { class: 'search-list' });
+  const searchBar = el('div', { class: 'search-bar hidden' },
+    el('div', { class: 'search-row' }, searchInput, el('button', { class: 'icon-btn', 'aria-label': 'Suche schließen', onclick: () => toggleSearch(false) }, '✕')),
+    searchList);
   const title = el('div', { class: 't1' });
   const sub = el('div', { class: 't2' });
   const avatar = el('div', { class: 'avatar sm' }, '…');
@@ -108,7 +114,7 @@ export async function openChat(chatId) {
       if (['ticket', 'channel'].includes(c.meta?.type)) return;
       try { (await import('./features/chatInfo.js')).openChatInfo(chatId); } catch { toast('Chat-Info nicht verfügbar.'); }
     } }, title, sub),
-    closeTicketBtn, callBtn, pinChatBtn, muteBtn);
+    closeTicketBtn, callBtn, searchBtn, pinChatBtn, muteBtn);
   const msgsEl = el('div', { class: 'msgs' });
   c.msgsEl = msgsEl;
 
@@ -131,7 +137,7 @@ export async function openChat(chatId) {
   const composer = el('div', { class: 'composer-wrap' }, mentionBox, ctxBar, voice.bar, composerRow, closedBar);
   const pinBar = el('div', { class: 'pin-bar hidden' });
   c.pinBar = pinBar;
-  pane.replaceChildren(head, pinBar, msgsEl, composer);
+  pane.replaceChildren(head, searchBar, pinBar, msgsEl, composer);
 
   // TAB-Auswahl: cyc merkt sich Liste, aktuellen Eintrag und den ersetzten Bereich im Textfeld.
   let cyc = null;
@@ -395,7 +401,8 @@ export async function openChat(chatId) {
       sub.textContent = m.ticket_status === 'closed' ? 'Support-Ticket · geschlossen' : 'Support-Ticket · offen';
     } else if (m.type === 'direct') {
       const on = c.online.has(m.peer_user_id);
-      sub.textContent = on ? 'online' : (c.peer?.last_seen ? 'zuletzt online ' + new Date(c.peer.last_seen).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
+      if (c.peer?.status_text) sub.textContent = '💬 ' + c.peer.status_text;
+      else sub.textContent = on ? 'online' : (c.peer?.last_seen ? 'zuletzt online ' + new Date(c.peer.last_seen).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
     } else {
       const n = [...c.online].filter(id => id !== state.me.id).length;
       sub.textContent = `${c.members.size} Mitglieder` + (n ? `, ${n} online` : '');
@@ -843,6 +850,43 @@ export async function openChat(chatId) {
   function jumpTo(id) {
     const n = msgsEl.querySelector(`[data-id="${CSS.escape(id)}"]`);
     if (n) { n.scrollIntoView({ block: 'center', behavior: 'smooth' }); n.classList.add('flash'); setTimeout(() => n.classList.remove('flash'), 1300); }
+  }
+
+  function toggleSearch(on = searchBar.classList.contains('hidden')) {
+    searchBar.classList.toggle('hidden', !on);
+    if (on) searchInput.focus();
+    else { searchInput.value = ''; searchList.replaceChildren(); }
+  }
+
+  let searchTimer = 0;
+  searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 300); });
+
+  async function runSearch() {
+    const term = searchInput.value.trim();
+    if (term.length < 2) { searchList.replaceChildren(); return; }
+    const like = '%' + term.replace(/[\\%_]/g, '\\$&') + '%';
+    const { data, error } = await sb.from('messages').select('id, sender_id, body, created_at')
+      .eq('chat_id', chatId).is('deleted_at', null).eq('is_system', false).ilike('body', like)
+      .order('created_at', { ascending: false }).limit(30);
+    if (c.dead || term !== searchInput.value.trim()) return;
+    if (error) { searchList.replaceChildren(el('div', { class: 'muted small' }, error.message)); return; }
+    await loadProfiles((data || []).map(r => r.sender_id));
+    if (!data?.length) { searchList.replaceChildren(el('div', { class: 'muted small' }, 'Nichts gefunden.')); return; }
+    searchList.replaceChildren(...data.map(m => {
+      const sp = profCache.get(m.sender_id);
+      const day = new Date(m.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      return el('button', { type: 'button', class: 'search-hit', onclick: () => openHit(m) },
+        el('div', { class: 'muted small' }, (sp?.display_name || sp?.username || 'Jemand') + ' · ' + day + ' ' + clock(m.created_at)),
+        el('div', {}, m.body.length > 120 ? m.body.slice(0, 120) + '…' : m.body));
+    }));
+  }
+
+  async function openHit(m) {
+    toggleSearch(false);
+    for (let i = 0; i < 40 && !c.byId.has(m.id) && !c.oldestReached && c.msgs.length; i++) await loadMessages(c.msgs[0].created_at);
+    if (c.dead) return;
+    render(false);
+    if (c.byId.has(m.id)) jumpTo(m.id); else toast('Die Nachricht ist zu weit oben.');
   }
 
   function render(stick) {

@@ -54,8 +54,10 @@ export function openSettings() {
   const stDur = el('select', {}, [['never', 'Nie (bleibt)'], ['1', '1 Stunde'], ['4', '4 Stunden'], ['today', 'Heute (bis Mitternacht)']]
     .map(([v, t]) => el('option', { value: v }, t)));
   stSel.value = state.pub?.status || '';
+  const stText = el('input', { type: 'text', maxlength: '60', placeholder: 'z. B. Bin gleich zurück', value: state.pub?.status_text || '' });
   root.append(section('Status',
     el('label', { class: 'field' }, 'Mein Status', stSel),
+    el('label', { class: 'field' }, 'Eigener Text (max. 60 Zeichen)', stText),
     el('label', { class: 'field' }, 'Wie lange?', stDur),
     el('button', { class: 'btn', onclick: async () => {
       const key = stSel.value || null;
@@ -64,7 +66,9 @@ export function openSettings() {
       else if (key && stDur.value !== 'never') until = new Date(Date.now() + Number(stDur.value) * 3600e3).toISOString();
       try {
         await call('set_my_status', { p_key: key, p_until: until });
-        if (state.pub) state.pub.status = key;
+        const text = stText.value.trim().slice(0, 60);
+        await call('set_my_status_text', { p_text: text });
+        if (state.pub) { state.pub.status = key; state.pub.status_text = text || null; }
         if (state.profile) { state.profile.status_key = key; state.profile.status_until = until; }
         toast('Gespeichert');
       } catch (e) { toast(e.message); }

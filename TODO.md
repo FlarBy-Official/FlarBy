@@ -22,3 +22,6 @@ Ideen:
 5. Mehr Farb-Designs zur Auswahl (nicht nur Rot).
 
 /do [Fertig]
+bitte mache 3., 4. [Fertig]
+(3: Profilbild gab es schon, neu ist der Status-Text. 4: Suche per 🔍 im Chat.)
+/do [Fertig] 

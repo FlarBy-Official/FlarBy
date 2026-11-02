@@ -223,6 +223,16 @@ export async function tabUsers(box) {
   }));
 }
 
+const svg = d => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  eye: svg('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  check: svg('<path d="M20 6 9 17l-5-5"/>'),
+  cal: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+  user: svg('<circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>'),
+  ban: svg('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'),
+  trash: svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
+};
+
 const AGE_STATUS = { open: 'neu', mod_ok: 'Mod: OK', mod_no: 'Mod: Nein' };
 
 async function showAgePhoto(requestId, userId) {
@@ -248,8 +258,11 @@ export async function tabAge(box) {
     try { await fn(); toast('Gespeichert.'); reload(); } catch (e) { if (e.message) toast(e.message); }
   } }, label);
 
-  const out = [el('h3', { style: 'margin:0 0 6px' }, `Warteschlange (${queue.length})`)];
-  if (!queue.length) out.push(el('p', { class: 'muted' }, 'Niemand wartet.'));
+  const card = (title, count, ...nodes) => el('section', { class: 'card' },
+    el('div', { class: 'card-head' }, el('h3', {}, title), count != null ? el('span', { class: 'pill' }, String(count)) : null), ...nodes);
+  const queueBox = el('div', {});
+  const out = [];
+  if (!queue.length) queueBox.append(el('p', { class: 'card-empty' }, 'Nichts zu prüfen. 🎉'));
   for (const q of queue) {
     const d = el('div', { class: 'list-row col' });
     d.innerHTML = `<div><strong>${esc(q.display_name || q.username)}</strong> <span class="muted small">@${esc(q.username)}${q.global_role !== 'user' ? ' · ' + esc(GLOBAL_LABEL[q.global_role]) : ''}</span> <span class="status status-aktiv">${esc(AGE_STATUS[q.status] || q.status)}</span></div>
@@ -276,25 +289,29 @@ export async function tabAge(box) {
         await call('age_decide', { p_request: q.request_id, p_ok: false, p_reason: t });
       }, 'danger'));
     d.append(row);
-    out.push(d);
+    queueBox.append(d);
   }
+  out.push(card('Warteschlange', queue.length, queueBox));
 
   if (lvl >= 2) {
-    out.push(el('h3', { style: 'margin:16px 0 6px' }, 'Alle Nutzer'));
-    const badge = (txt, cls) => el('span', { class: 'badge ' + cls }, txt);
+    const badge = (txt, cls) => el('span', { class: 'badge ' + cls }, el('i', {}), txt);
     const rows = users.map(u => {
       const badges = el('td', {}, u.verified ? badge('Geprüft', 'ok') : badge('Gesperrt', 'bad'), u.too_young ? badge('Unter 14', 'warn') : null, u.is_guardian ? badge('Elternteil', 'neutral') : null);
       const items = [];
-      const item = (label, fn, danger) => items.push(el('button', { class: 'menu-item' + (danger ? ' danger' : ''), onclick: async e => {
-        e.target.closest('details').open = false;
-        try { await fn(); toast('Gespeichert.'); reload(); } catch (err) { if (err.message) toast(err.message); }
-      } }, label));
-      if (u.has_photo && u.user_id !== state.me.id) item('👁 Foto ansehen', () => showAgePhoto(null, u.user_id));
-      if (u.user_id !== state.me.id && !u.owner_auto) item(u.verified ? '🚫 Wieder sperren' : '✅ Als geprüft markieren', async () => {
+      const item = (label, fn, danger) => {
+        const b = el('button', { class: 'menu-item' + (danger ? ' danger' : ''), onclick: async e => {
+          e.currentTarget.closest('details').open = false;
+          try { await fn(); toast('Gespeichert.'); reload(); } catch (err) { if (err.message) toast(err.message); }
+        } });
+        b.innerHTML = label;
+        items.push(b);
+      };
+      if (u.has_photo && u.user_id !== state.me.id) item(ICON.eye + 'Foto ansehen', () => showAgePhoto(null, u.user_id));
+      if (u.user_id !== state.me.id && !u.owner_auto) item(u.verified ? ICON.ban + 'Wieder sperren' : ICON.check + 'Als geprüft markieren', async () => {
         if (!await confirmDialog(`@${u.username} ${u.verified ? 'wieder sperren' : 'als geprüft markieren'}?`, 'Ja')) throw new Error('');
         await call('age_set_verified', { p_user: u.user_id, p_value: !u.verified });
       });
-      item('📅 Geburtsdatum ändern', async () => {
+      item(ICON.cal + 'Geburtsdatum ändern', async () => {
         const t = await ask('Geburtsdatum ändern', 'Neues Datum (TT.MM.JJJJ)');
         if (!t) throw new Error('');
         const m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
@@ -303,8 +320,8 @@ export async function tabAge(box) {
         await call('age_set_birth', { p_user: u.user_id, p_birth: iso });
       });
       if (lvl >= 3) {
-        item(u.is_guardian ? '👪 Kein Elternteil mehr' : '👪 Elternteil', () => call('age_set_guardian', { p_user: u.user_id, p_value: !u.is_guardian }));
-        if (u.birth_date || u.has_photo) item('🗑 Fotos & Datum löschen', async () => {
+        item(u.is_guardian ? ICON.user + 'Kein Elternteil mehr' : ICON.user + 'Elternteil', () => call('age_set_guardian', { p_user: u.user_id, p_value: !u.is_guardian }));
+        if (u.birth_date || u.has_photo) item(ICON.trash + 'Fotos & Datum löschen', async () => {
           if (!await confirmDialog(`Alle Ausweis-Fotos und das Geburtsdatum von @${u.username} für immer löschen?`, 'Löschen')) throw new Error('');
           await call('age_owner_delete', { p_user: u.user_id });
         }, true);
@@ -319,11 +336,18 @@ export async function tabAge(box) {
         list.style.right = (innerWidth - r.right) + 'px';
       });
       const name = el('td', {});
-      name.innerHTML = `<strong>${esc(u.display_name || u.username)}</strong><div class="muted small">@${esc(u.username)}</div>`;
+      name.innerHTML = `<div class="who"><span class="ini">${esc((u.display_name || u.username).slice(0, 2).toUpperCase())}</span><div><strong>${esc(u.display_name || u.username)}</strong><div class="muted small">@${esc(u.username)}</div></div></div>`;
       return el('tr', {}, name, badges, el('td', { class: 'muted' }, u.birth_date ? new Date(u.birth_date).toLocaleDateString('de-DE') : '–'), el('td', { class: 'right' }, menu));
     });
-    out.push(el('div', { class: 'table-scroll' }, el('table', { class: 'data-table' },
-      el('thead', {}, el('tr', {}, ['Nutzer', 'Status', 'Geburtsdatum', ''].map(h => el('th', {}, h)))), el('tbody', {}, rows))));
+    const body = el('tbody', {}, rows);
+    const search = el('input', { type: 'search', class: 'adm-search', placeholder: 'Nutzer suchen …' });
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      rows.forEach(r => { r.hidden = !!q && !r.textContent.toLowerCase().includes(q); });
+    });
+    out.unshift(el('div', { class: 'adm-sub' }, el('p', { class: 'muted' }, 'Alter prüfen und Nutzer verwalten.'), search));
+    out.push(card('Alle Nutzer', users.length, el('div', { class: 'table-scroll' }, el('table', { class: 'data-table' },
+      el('thead', {}, el('tr', {}, ['Nutzer', 'Status', 'Geburtsdatum', ''].map(h => el('th', {}, h)))), body))));
   }
   box.replaceChildren(...out);
 }

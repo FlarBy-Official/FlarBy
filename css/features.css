@@ -238,3 +238,31 @@ h4{margin:16px 0 6px}
   .adm-item{white-space:nowrap}
   .adm-main{padding:12px}
 }
+
+/* Näher am Entwurf: Karten, Pillen, Punkt-Badges */
+.adm-layout{background:var(--panel,#fafafa)}
+.adm-side{background:var(--bg,#fff)}
+.adm-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;border-bottom:1px solid var(--border,#e5e5e5)}
+.adm-brand::before{content:"F";display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:#dc2626;color:#fff;font-size:.85rem}
+.adm-item.active .adm-count{background:rgba(255,255,255,.25)}
+.adm-main{padding:24px 28px 48px}
+.adm-title{font-size:1.25rem;margin:0}
+.adm-sub{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 16px}
+.adm-sub p{margin:0}
+.adm-search{width:260px;max-width:100%;border:1px solid var(--border,#ccc);border-radius:8px;padding:8px 12px;background:var(--bg,#fff);color:inherit;font:inherit;font-size:.9rem}
+.adm-search:focus{outline:2px solid rgba(128,128,128,.3);border-color:#888}
+.card{background:var(--bg,#fff);border:1px solid var(--border,#e5e5e5);border-radius:10px;margin-bottom:20px;overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border,#e5e5e5)}
+.card-head h3{margin:0;font-size:.95rem}
+.pill{background:rgba(128,128,128,.18);border-radius:999px;font-size:.75rem;padding:1px 9px}
+.card-empty{text-align:center;color:#999;padding:24px 16px;margin:0}
+.card .list-row{padding-left:16px;padding-right:16px}
+.badge i{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:middle}
+.who{display:flex;align-items:center;gap:10px}
+.ini{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(128,128,128,.25);font-size:.72rem;font-weight:600;flex:none}
+.data-table th{font-weight:600;background:rgba(128,128,128,.07)}
+.data-table tr[hidden]{display:none}
+.menu-item{display:flex;align-items:center;gap:8px}
+.menu-item svg{flex:none;opacity:.7}
+.menu-item.danger svg{opacity:1}
+@media (max-width:720px){.adm-main{padding:14px}}

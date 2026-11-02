@@ -28,3 +28,4 @@ bitte mache 3., 4. [Fertig]
 
 Danke [Fertig] (kein Auftrag)
 /do [Fertig]
+

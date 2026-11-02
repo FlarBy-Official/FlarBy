@@ -28,6 +28,12 @@ Der Besitzer darf in einer Zeile einen Skill schreiben, zum Beispiel `/grilling 
 - `/new`: Pushe alles, schreibe `[Fertig]` hinter die Zeile und schreibe unter die Zeile 2–3 Sätze: Was ist schon fertig, was kommt als Nächstes. Höre dann auf. Sage dem Besitzer, dass er im Terminal `/new` tippen soll, um einen frischen Chat zu starten. Alles nach `/new` macht der neue Chat bei `/todo-read`.
 - Andere Skills macht der Besitzer selbst im Chat.
 
+## Änderungs-Log (`LOG.md`)
+- Nach **jeder** Änderung am Projekt (auch Wünsche aus dem Chat) schreibst du einen Eintrag in `LOG.md`.
+- Neue Einträge kommen **oben** hin (Neuestes zuerst), direkt unter den Einleitungstext.
+- Ein Eintrag hat: Datum und Uhrzeit, `Was:` (1–2 einfache Sätze), `Dateien:` und `Auftrag aus TODO.md:` (ja oder nein).
+- `LOG.md` steht in `.gitignore`. Sie wird **nie** gepusht und bleibt nur auf dem Computer des Besitzers. Schreibe nie Schlüssel oder Passwörter hinein.
+
 ## Wichtige Daten
 - Code-Seite (GitHub): https://github.com/FlarBy-Official/FlarBy (Konto `FlarBy-Official`, Zweig `main`)
 - Die fertige App: https://flarby-official.github.io/FlarBy/

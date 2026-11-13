@@ -197,7 +197,7 @@ export function openNewChat() {
   const m = openModal('Neuer Chat', el('div', { class: 'menu-list' },
     el('button', { onclick: () => { m.close(); newGroup(); } }, '👥 Neue Gruppe'),
     el('button', { onclick: () => { m.close(); newDirect(); } }, '💬 Neuer Chat mit Benutzer'),
-    el('button', { onclick: async () => { m.close(); try { (await import('./features/invite.js')).openJoin(); } catch (e) { toast('Nicht verfügbar.'); } } }, '🔑 Code eingeben / QR scannen')));
+    el('button', { onclick: async () => { m.close(); try { (await import('./features/invite.js')).openJoin(); } catch (e) { toast('Nicht verfügbar.'); } } }, '🔑 Code eingeben / QR scannen')), { full: true });
 }
 
 function newGroup() {
@@ -213,7 +213,7 @@ function newGroup() {
       location.hash = '#/chat/' + id;
     } catch (e) { err.textContent = e.message; btn.disabled = false; }
   } }, 'Gruppe erstellen');
-  const m = openModal('Neue Gruppe', el('div', {}, name, err, el('div', { class: 'row end' }, btn)));
+  const m = openModal('Neue Gruppe', el('div', {}, name, err, el('div', { class: 'row end' }, btn)), { full: true });
   name.focus();
 }
 
@@ -244,6 +244,6 @@ function newDirect() {
       } catch (e) { res.replaceChildren(el('div', { class: 'error' }, e.message)); }
     }, 300);
   });
-  const m = openModal('Neuer Chat', el('div', {}, input, res));
+  const m = openModal('Neuer Chat', el('div', {}, input, res), { full: true });
   input.focus();
 }

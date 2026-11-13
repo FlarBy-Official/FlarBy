@@ -456,7 +456,7 @@ export async function openChat(chatId) {
             await call('create_poll', { p_chat_id: chatId, p_question: q.value, p_options: [...opts.querySelectorAll('input')].map(i => i.value) });
             m.close();
           } catch (e) { toast(e.message); }
-        } }, 'Senden'))));
+        } }, 'Senden'))), { full: true });
     q.focus();
   }
 
@@ -678,7 +678,7 @@ export async function openChat(chatId) {
     if (!choices.length) { toast('Keine Chats vorhanden.'); return; }
     const q = el('input', { type: 'search', placeholder: 'Chat suchen' });
     const list = el('div', { class: 'menu-list fwd-list' });
-    const modal = openModal('Weiterleiten an …', el('div', {}, q, list));
+    const modal = openModal('Weiterleiten an …', el('div', {}, q, list), { full: true });
     const draw = () => {
       const t = q.value.trim().toLowerCase();
       const hits = choices.filter(x => !t || x.text.toLowerCase().includes(t));

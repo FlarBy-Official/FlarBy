@@ -20,7 +20,7 @@ export const roleLabel = r => (r && r.is_system ? SYS_LABEL[r.system_key] || r.n
 
 export async function openRoles(chatId) {
   const body = el('div', { class: 'roles-wrap' });
-  const m = openModal('Rollen verwalten', body, { wide: true });
+  const m = openModal('Rollen verwalten', body, { full: true });
 
   async function load() {
     body.replaceChildren(el('p', { class: 'muted' }, 'Lade …'));

@@ -25,7 +25,7 @@ function toggle(label, checked, onchange) {
 export function openSettings() {
   const p = state.profile || {};
   const root = el('div');
-  const m = openModal('Einstellungen', root);
+  const m = openModal('Einstellungen', root, { full: true });
 
   // Profil
   const dn = el('input', { type: 'text', maxlength: '40', value: p.display_name || '' });

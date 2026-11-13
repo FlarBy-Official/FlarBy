@@ -88,15 +88,16 @@ export function toast(msg, ms = 3000) {
 }
 
 // Modal: openModal('Titel', node) -> { close }
-export function openModal(title, content, { wide = false } = {}) {
-  const overlay = el('div', { class: 'modal-overlay' });
-  const box = el('div', { class: 'modal' + (wide ? ' wide' : '') },
-    el('div', { class: 'modal-head' },
-      el('strong', {}, title),
-      el('button', { class: 'icon-btn', 'aria-label': 'Schließen', onclick: () => close() }, '✕')),
+// { full: true } = eigener Vollbild-Bildschirm mit „← Zurück"
+export function openModal(title, content, { wide = false, full = false } = {}) {
+  const overlay = el('div', { class: 'modal-overlay' + (full ? ' full' : '') });
+  const closeBtn = el('button', { class: 'icon-btn', 'aria-label': full ? 'Zurück' : 'Schließen', onclick: () => close() }, full ? '←' : '✕');
+  const title_ = el('strong', { class: 'modal-title' }, title);
+  const box = el('div', { class: 'modal' + (wide ? ' wide' : '') + (full ? ' full' : '') },
+    el('div', { class: 'modal-head' }, ...(full ? [closeBtn, title_] : [title_, closeBtn])),
     el('div', { class: 'modal-body' }, content));
   overlay.append(box);
-  overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
+  if (!full) overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
   document.body.append(overlay);
   function close() { overlay.remove(); }
   return { close, box };

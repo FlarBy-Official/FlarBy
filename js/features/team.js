@@ -26,7 +26,7 @@ export function openTeamPanel() {
 
   const content = el('div', { class: 'team-content' });
   const bar = el('div', { class: 'tabs' });
-  const m = openModal('Team-Bereich', el('div', {}, bar, content), { wide: true });
+  const m = openModal('Team-Bereich', el('div', {}, bar, content), { full: true });
   function show(id) {
     bar.replaceChildren(...tabs.map(([k, l]) => el('button', { class: 'tab' + (k === id ? ' active' : ''), onclick: () => show(k) }, l)));
     const fn = tabs.find(t => t[0] === id)[3];
@@ -117,7 +117,7 @@ async function reportDetail(r, reload) {
     uid && act('Verwarnen', async () => { const t = await ask('Verwarnen', 'Grund'); if (t) await call('warn_user', { p_user_id: uid, p_reason: t }); }),
     uid && act('Stummschalten', async () => { const h = await ask('Stummschalten', 'Stunden', '24'); if (h) await call('mute_user', { p_user_id: uid, p_hours: parseInt(h, 10) || 24 }); }),
     r.status === 'open' && act('Als erledigt markieren', async () => { await call('resolve_report', { p_report_id: r.id }); m.close(); reload(); }, ''));
-  const m = openModal('Meldung', el('div', {}, el('p', {}, el('strong', {}, 'Grund: '), r.reason), list, actions), { wide: true });
+  const m = openModal('Meldung', el('div', {}, el('p', {}, el('strong', {}, 'Grund: '), r.reason), list, actions), { full: true });
 }
 
 function deviceOf(ua = '') {
@@ -246,7 +246,7 @@ async function showAgePhoto(requestId, userId) {
 
 export function openAgeReview() {
   const content = el('div', { class: 'team-content' }, el('p', { class: 'muted' }, 'Lade …'));
-  const m = openModal('Alterprüfung', content, { wide: true });
+  const m = openModal('Alterprüfung', content, { full: true });
   tabAge(content).catch(e => content.replaceChildren(el('p', { class: 'error' }, e.message)));
   return m;
 }

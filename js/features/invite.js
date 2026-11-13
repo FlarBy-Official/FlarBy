@@ -59,7 +59,7 @@ export function openInvite(chatId) {
     found,
     el('h4', {}, 'Codes'),
     list);
-  openModal('Einladen', body, { wide: true });
+  openModal('Einladen', body, { full: true });
 
   async function loadList() {
     try {

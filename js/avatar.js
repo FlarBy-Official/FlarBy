@@ -117,7 +117,7 @@ function emojiPicker(onPick) {
   const m = openModal('Emoji-Avatar', el('div', {}, el('div', { class: 'row' }, prev), grid, cols,
     el('div', { class: 'row end' },
       el('button', { class: 'btn ghost', onclick: () => m.close() }, 'Abbrechen'),
-      el('button', { class: 'btn', onclick: async () => { m.close(); await onPick(`emoji:${emoji}|${color}`); } }, 'Übernehmen'))));
+      el('button', { class: 'btn', onclick: async () => { m.close(); await onPick(`emoji:${emoji}|${color}`); } }, 'Übernehmen'))), { full: true });
 }
 
 // Editor mit Vorschau. save(wert) speichert in der Datenbank (set_my_avatar / set_chat_avatar).

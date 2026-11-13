@@ -161,7 +161,7 @@ async function shrinkPhoto(file) {
 // Für Eltern: Anfragen von Kindern bestätigen
 export async function openGuardianRequests() {
   const box = el('div', {}, el('p', { class: 'muted' }, 'Lade …'));
-  const m = openModal('Bürgen-Anfragen', box);
+  const m = openModal('Bürgen-Anfragen', box, { full: true });
   async function load() {
     const rows = (await call('age_guardian_list')) || [];
     if (!rows.length) return box.replaceChildren(el('p', { class: 'muted' }, 'Keine offenen Anfragen.'));

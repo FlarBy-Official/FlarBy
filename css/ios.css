@@ -38,3 +38,17 @@ input, textarea, select { font-size: 16px !important; }
   .modal.wide { max-width: 100%; }
   .table-scroll { overflow-x: auto; }
 }
+
+/* Vollbild-Bildschirme (openModal mit full: true) */
+.modal-overlay.full { padding: 0; align-items: stretch; justify-content: stretch; background: var(--bg, #fff); }
+.modal-overlay.full .modal { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; box-shadow: none; }
+.modal-overlay.full .modal-head { justify-content: flex-start; gap: 10px; border-radius: 0; padding-top: calc(10px + env(safe-area-inset-top)); flex: 0 0 auto; }
+.modal-overlay.full .modal-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal-overlay.full .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.modal-overlay.full .modal-body > * { max-width: 720px; margin-left: auto; margin-right: auto; }
+.modal-overlay.full .list-row .grow, .modal-overlay.full .member-hit .grow { min-width: 0; overflow-wrap: anywhere; }
+.modal-overlay.full .sticky-foot { position: sticky; bottom: -16px; background: var(--panel, #fff); padding: 8px 0; flex-wrap: wrap; border-top: 1px solid var(--border, #ddd); }
+.modal-overlay.full .row { flex-wrap: wrap; }
+.modal-overlay.full .row > input, .modal-overlay.full .row > select, .modal-overlay.full .row > .grow { flex: 1 1 160px; min-width: 0; }
+.modal-overlay.full .list-row { flex-wrap: wrap; }
+.modal-overlay.full .list-row > .btn, .modal-overlay.full .list-row > select { flex: 0 0 auto; }

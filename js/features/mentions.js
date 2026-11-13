@@ -34,7 +34,7 @@ function profileView(p, roleText) {
 
 async function openProfile(p, chatId) {
   const role = await roleOf(chatId, p.id);
-  openModal('Profil', profileView(p, role ?? 'Nicht mehr im Chat'));
+  openModal('Profil', profileView(p, role ?? 'Nicht mehr im Chat'), { full: true });
 }
 
 function memberList(title, profiles, chatId) {
@@ -68,7 +68,7 @@ export async function openMention(token, chatId) {
         const { data: wrote } = await sb.from('messages').select('id').eq('chat_id', chatId).eq('sender_id', p.id).limit(1);
         if (!wrote?.length) return;
       }
-      return openModal('Profil', profileView(p, role ?? 'Nicht mehr im Chat'));
+      return openModal('Profil', profileView(p, role ?? 'Nicht mehr im Chat'), { full: true });
     }
     const { data: roles } = await sb.from('chat_roles').select('id,name').eq('chat_id', chatId);
     const role = (roles || []).find(r => norm(r.name) === name);

@@ -5,7 +5,7 @@ import { openAvatarReport } from './report.js';
 
 export async function openChatInfo(chatId) {
   const body = el('div', { class: 'chatinfo' }, el('p', { class: 'muted' }, 'Lade …'));
-  const m = openModal('Chatinfo', body, { wide: true });
+  const m = openModal('Chatinfo', body, { full: true });
   try { await render(); } catch (e) { body.replaceChildren(el('p', { class: 'error' }, e.message)); }
 
   async function render() {
@@ -26,6 +26,31 @@ export async function openChatInfo(chatId) {
     const mine = members.find(x => x.user_id === me);
     const perms = rmap[mine?.role_id]?.permissions || {};
     const can = k => !!perms[k];
+    function openMemberMenu(mem, p, isOwner) {
+      const nm = p.display_name || p.username;
+      const items = [];
+      const act = fn => async () => { menu.close(); try { await fn(); } catch (e) { toast(e.message); } await render(); };
+      if (p.avatar_url) items.push(el('button', { onclick: () => { menu.close(); openAvatarReport('user', mem.user_id); } }, '🚩 Avatar melden'));
+      if (!isOwner) {
+        if (can('assign_roles')) {
+          const sel = el('select', { 'aria-label': 'Rolle' }, (roles || []).filter(x => x.system_key !== 'owner')
+            .map(x => el('option', { value: x.id, selected: x.id === mem.role_id }, roleLabel(x))));
+          sel.addEventListener('change', act(async () => { await call('set_member_role', { p_chat_id: chatId, p_user_id: mem.user_id, p_role_id: sel.value }); toast('Rolle geändert.'); }));
+          items.push(el('label', { class: 'field' }, 'Rolle', sel));
+        }
+        if (can('remove_members')) items.push(el('button', { onclick: async () => {
+          menu.close();
+          if (!await confirmDialog(`${nm} aus der Gruppe entfernen?`, 'Entfernen')) return;
+          try { await call('remove_member', { p_chat_id: chatId, p_user_id: mem.user_id }); await render(); } catch (e) { toast(e.message); }
+        } }, '🚪 Entfernen'));
+        if (can('transfer_ownership')) items.push(el('button', { onclick: async () => {
+          menu.close();
+          if (!await confirmDialog(`Eigentum an ${nm} übertragen? Du wirst Admin.`, 'Übertragen')) return;
+          try { await call('transfer_ownership', { p_chat_id: chatId, p_user_id: mem.user_id }); toast('Eigentum übertragen.'); await render(); } catch (e) { toast(e.message); }
+        } }, '👑 Eigentum übertragen'));
+      }
+      const menu = openModal(nm, el('div', { class: 'menu-list' }, items.length ? items : [el('p', { class: 'muted' }, 'Keine Aktionen möglich.')]));
+    }
     const nodes = [];
 
     const name = el('input', { type: 'text', maxlength: 60, value: chat.name || '', disabled: !can('edit_chat_info') });
@@ -71,30 +96,11 @@ export async function openChatInfo(chatId) {
       line.append(avatarEl({ url: p.avatar_url, name: p.display_name || p.username, seed: mem.user_id, cls: 'sm' }));
       lab.innerHTML = `${nameHtml(p)}${mem.user_id === me ? ' (du)' : ''} <span class="role-chip" style="--c:${esc(r?.color || '#888')}">${esc(roleLabel(r))}</span>`;
       line.append(lab);
-      if (mem.user_id !== me && p.avatar_url) line.append(el('button', { class: 'btn ghost small', title: 'Avatar melden', onclick: () => openAvatarReport('user', mem.user_id) }, '🚩'));
-      if (mem.user_id !== me && !isOwner) {
-        if (can('assign_roles')) {
-          const sel = el('select', { 'aria-label': 'Rolle' }, (roles || []).filter(x => x.system_key !== 'owner')
-            .map(x => el('option', { value: x.id, selected: x.id === mem.role_id }, roleLabel(x))));
-          sel.addEventListener('change', async () => {
-            try { await call('set_member_role', { p_chat_id: chatId, p_user_id: mem.user_id, p_role_id: sel.value }); toast('Rolle geändert.'); await render(); }
-            catch (e) { toast(e.message); await render(); }
-          });
-          line.append(sel);
-        }
-        if (can('remove_members')) line.append(el('button', { class: 'btn ghost small', onclick: async () => {
-          if (!await confirmDialog(`${p.display_name || p.username} aus der Gruppe entfernen?`, 'Entfernen')) return;
-          try { await call('remove_member', { p_chat_id: chatId, p_user_id: mem.user_id }); await render(); } catch (e) { toast(e.message); }
-        } }, 'Entfernen'));
-        if (can('transfer_ownership')) line.append(el('button', { class: 'btn ghost small', onclick: async () => {
-          if (!await confirmDialog(`Eigentum an ${p.display_name || p.username} übertragen? Du wirst Admin.`, 'Übertragen')) return;
-          try { await call('transfer_ownership', { p_chat_id: chatId, p_user_id: mem.user_id }); toast('Eigentum übertragen.'); await render(); } catch (e) { toast(e.message); }
-        } }, 'Eigentum'));
-      }
+      if (mem.user_id !== me) line.append(el('button', { class: 'btn ghost small', 'aria-label': 'Aktionen', onclick: () => openMemberMenu(mem, p, isOwner) }, '⋯'));
       nodes.push(line);
     }
 
-    const foot = el('div', { class: 'row end' }, el('button', { class: 'btn danger', onclick: async () => {
+    const foot = el('div', { class: 'row end sticky-foot' }, el('button', { class: 'btn danger', onclick: async () => {
       if (!await confirmDialog('Gruppe wirklich verlassen?', 'Verlassen')) return;
       try { await call('leave_chat', { p_chat_id: chatId }); m.close(); toast('Gruppe verlassen.'); window.dispatchEvent(new CustomEvent('flarchat:chat-left', { detail: { chatId } })); }
       catch (e) { toast(e.message); }

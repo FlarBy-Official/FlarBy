@@ -77,7 +77,7 @@ export function copyBtn(text) {
   });
   return b;
 }
-export function creditEl() { return el('div', { class: 'credit' }, 'Programmiert von Bela ❤️'); }
+export function creditEl() { return el('div', { class: 'credit' }, 'Programmiert von Bela'); }
 
 export function toast(msg, ms = 3000) {
   let box = document.getElementById('toasts');

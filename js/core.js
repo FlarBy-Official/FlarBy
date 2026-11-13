@@ -64,6 +64,21 @@ export function el(tag, attrs = {}, ...children) {
   return n;
 }
 
+export function copyBtn(text) {
+  const b = el('button', { class: 'btn ghost small', type: 'button' }, 'Kopieren');
+  b.addEventListener('click', async e => {
+    e.stopPropagation();
+    try { await navigator.clipboard.writeText(text); } catch {
+      const t = el('textarea', { style: 'position:fixed;opacity:0' }); t.value = text; document.body.append(t); t.select();
+      try { document.execCommand('copy'); } catch {} t.remove();
+    }
+    b.textContent = 'Kopiert ✓';
+    setTimeout(() => { b.textContent = 'Kopieren'; }, 2000);
+  });
+  return b;
+}
+export function creditEl() { return el('div', { class: 'credit' }, 'Programmiert von Bela ❤️'); }
+
 export function toast(msg, ms = 3000) {
   let box = document.getElementById('toasts');
   if (!box) { box = el('div', { id: 'toasts' }); document.body.append(box); }

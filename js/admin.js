@@ -1,4 +1,4 @@
-import { sb, state, el, esc, toast, call, nameHtml, confirmDialog } from './core.js';
+import { sb, state, el, esc, toast, call, nameHtml, confirmDialog, creditEl } from './core.js';
 import { signedUrl } from './media.js';
 
 let root = document.getElementById('admin-root');
@@ -55,7 +55,7 @@ function mainScreen() {
   const head = el('header', { class: 'adm-head' }, el('div', {}, title, subtitle));
   const back = overlay ? el('button', { class: 'adm-back', onclick: closeAdmin }, '← Zurück') : el('a', { class: 'adm-back', href: './' }, '← Zur App');
   root?.replaceChildren(el('div', { class: 'adm-layout' },
-    el('aside', { class: 'adm-side' }, el('div', { class: 'adm-brand' }, 'FlarChat Admin'), nav, el('div', { class: 'adm-foot' }, back)),
+    el('aside', { class: 'adm-side' }, el('div', { class: 'adm-brand' }, 'FlarChat Admin'), nav, el('div', { class: 'adm-foot' }, back, creditEl())),
     el('div', { class: 'adm-col' }, banner(), el('main', { class: 'adm-main' }, head, view))));
   let queueCount = 0;
   call('age_queue').then(q => { queueCount = (q || []).length; if (queueCount) nav.querySelector('[data-k=age]')?.append(el('span', { class: 'adm-count' }, String(queueCount))); }).catch(() => {});

@@ -77,3 +77,4 @@ Deine Aufgaben für das Redesign:
 - Verwende anstelle von reinem Text-Buttons moderne Icons (z.B. angedeutete Lucide/Heroicons für "Löschen", "Sperren", "Auge-Icon für Fotos").
 - Schreibe mir ein vollständiges, sofort einsatzbereites HTML-Gerüst mit Tailwind CSS Klassen, das genau diese Nutzerübersicht ("Alter"-Reiter) als saubere, übersichtliche Tabelle oder Card-Struktur darstellt.
 /do [Fertig]
+

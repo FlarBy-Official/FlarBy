@@ -1,4 +1,4 @@
-import { sb, state, el, esc, nameHtml, toast, call, openModal, closeModal, confirmDialog, STATUS } from '../core.js';
+import { sb, state, el, esc, nameHtml, toast, call, openModal, closeModal, confirmDialog, STATUS, creditEl } from '../core.js';
 import { avatarEditor } from '../avatar.js';
 import { backgroundSettings } from './background.js';
 import { hasPin, setPin, removePin } from '../pinlock.js';
@@ -143,6 +143,7 @@ export function openSettings() {
   renderPushSection(pushBox);
 
   root.append(el('button', { class: 'btn block', onclick: async () => { closeModal(); await sb.auth.signOut(); } }, 'Abmelden'));
+  root.append(creditEl());
 }
 
 async function renderPushSection(box) {

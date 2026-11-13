@@ -1,4 +1,4 @@
-import { sb, el, call, toast } from './core.js';
+import { sb, el, call, toast, creditEl } from './core.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const USER_RE = /^[a-z0-9_]{3,20}$/;
@@ -59,7 +59,7 @@ export function renderAuth(root, { onLogin, notice } = {}) {
   const body = el('div');
   const card = el('div', { class: 'auth-card' },
     el('div', { class: 'auth-logo' }, el('img', { src: 'icons/icon.svg', alt: '' }), el('h1', {}, 'FlarChat')),
-    body);
+    body, creditEl());
   root.append(el('div', { class: 'auth-wrap' }, card));
   if (notice) body.append(el('div', { class: 'error' }, notice));
 

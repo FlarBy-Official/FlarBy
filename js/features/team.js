@@ -1,4 +1,4 @@
-import { sb, state, el, esc, toast, openModal, confirmDialog, call, nameHtml, fmtTime } from '../core.js';
+import { sb, state, el, esc, toast, openModal, confirmDialog, call, nameHtml, fmtTime, copyBtn } from '../core.js';
 import { avatarEl, avatarSignedUrl, parseAvatar } from '../avatar.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
 
@@ -184,6 +184,7 @@ export async function tabUsers(box) {
     const lab = el('span', { class: 'grow' });
     lab.innerHTML = `${nameHtml({ ...u, team_role: u.global_role !== 'user' ? u.global_role : null })} <span class="muted small">@${esc(u.username)}</span>${ipOf[u.id] ? ` <span class="muted small">· IP ${esc(ipOf[u.id])}</span>` : ''}${u.banned ? ' <span class="status status-widerrufen">gesperrt</span>' : ''}${u.muted_until && new Date(u.muted_until) > new Date() ? ' <span class="status status-abgelaufen">stumm</span>' : ''}`;
     d.append(lab);
+    if (ipOf[u.id]) d.append(copyBtn(ipOf[u.id]));
     if (u.id === me.id) return d;
     const b = (l, fn) => el('button', { class: 'btn ghost small', onclick: async () => { try { await fn(); toast('Gespeichert.'); tabUsers(box); } catch (e) { toast(e.message); } } }, l);
     const targetLvl = LEVEL[u.global_role] ?? 0;
@@ -195,12 +196,13 @@ export async function tabUsers(box) {
         const kids = logs.length
           ? logs.map(l => {
             const d = el('div', { class: 'list-row col' });
-            d.innerHTML = `<div><strong>${esc(l.ip || '?')}</strong> <span class="muted small">${esc(fmtTime(l.created_at))}</span></div>
+            d.innerHTML = `<div><strong>${esc(l.ip || '?')}</strong> <span class="muted small">${esc(fmtTime(l.created_at))}</span><span class="ip-copy"></span></div>
               <div class="small">${esc([l.city, l.country].filter(Boolean).join(', ') || 'Ort unbekannt')} · ${esc(deviceOf(l.user_agent))}</div>
               <div class="muted small">Sprache ${esc(l.language || '?')} · Zeitzone ${esc(l.timezone || '?')} · Bildschirm ${esc(l.screen || '?')} · ${l.standalone ? 'als App installiert' : 'im Browser'}</div>`;
+            if (l.ip) d.querySelector('.ip-copy').replaceWith(copyBtn(l.ip));
             return d;
           })
-          : ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen))));
+          : ips.map(i => el('div', { class: 'list-row' }, el('span', { class: 'grow' }, i.ip), el('span', { class: 'muted small' }, fmtTime(i.last_seen)), copyBtn(i.ip)));
         openModal('Anmelde-Verlauf von @' + u.username, kids.length ? el('div', {}, kids) : el('p', { class: 'muted' }, 'Noch nichts gespeichert.'), { wide: true });
       } catch (e) { toast(e.message); }
     } }, 'Verlauf'));

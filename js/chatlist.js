@@ -1,4 +1,4 @@
-import { sb, state, el, richNodes, nameHtml, esc, fmtTime, toast, call, openModal } from './core.js';
+import { sb, state, el, richNodes, nameHtml, esc, fmtTime, toast, call, openModal, creditEl } from './core.js';
 import { avatarEl } from './avatar.js';
 import { openMention } from './features/mentions.js';
 
@@ -166,7 +166,7 @@ function render() {
   const shown = sorted.filter(c => !query || title(c).text.toLowerCase().includes(query)
     || (c.last_message_body || '').toLowerCase().includes(query));
   if (!shown.length) {
-    listEl.replaceChildren(el('div', { class: 'empty' }, items.length ? 'Keine Treffer.' : 'Noch keine Chats. Tippe oben auf ＋, um einen zu starten.'));
+    listEl.replaceChildren(el('div', { class: 'empty' }, items.length ? 'Keine Treffer.' : 'Noch keine Chats. Tippe oben auf ＋, um einen zu starten.'), creditEl());
     return;
   }
   listEl.replaceChildren(...shown.map(c => {
@@ -190,7 +190,7 @@ function render() {
           mentioned ? el('span', { class: 'badge', title: 'Du wurdest erwähnt' }, '@') : '',
           pinned ? el('span', { class: 'pin-icon', title: 'Angepinnt' }, '📌') : '',
           unread ? el('span', { class: 'badge' + (muted ? ' muted' : '') }, c.unread_count > 99 ? '99+' : c.unread_count) : (muted ? el('span', { class: 'mute-icon', title: 'Stumm' }, '🔕') : ''))));
-  }));
+  }), creditEl());
 }
 
 export function openNewChat() {
